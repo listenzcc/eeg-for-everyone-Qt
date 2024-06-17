@@ -69,7 +69,7 @@
             <item>
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="currentIndex">
-               <number>0</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="tab">
                <attribute name="title">
@@ -124,9 +124,9 @@
               </widget>
               <widget class="QWidget" name="tab_2">
                <attribute name="title">
-                <string>Rejects</string>
+                <string>Reject</string>
                </attribute>
-               <widget class="QPlainTextEdit" name="zcc_plainTextEdit_rejects">
+               <widget class="QPlainTextEdit" name="zcc_plainTextEdit_reject">
                 <property name="geometry">
                  <rect>
                   <x>0</x>
@@ -220,7 +220,7 @@
               <cursorShape>ForbiddenCursor</cursorShape>
              </property>
              <property name="styleSheet">
-              <string notr="true">background-color: #FEDFE1</string>
+              <string notr="true">background-color: #c7ffff</string>
              </property>
              <property name="frameShape">
               <enum>QFrame::Shape::WinPanel</enum>
@@ -301,7 +301,7 @@
               <cursorShape>ForbiddenCursor</cursorShape>
              </property>
              <property name="styleSheet">
-              <string notr="true">background-color: #FEDFE1</string>
+              <string notr="true">background-color: #c7ffff</string>
              </property>
              <property name="frameShape">
               <enum>QFrame::Shape::WinPanel</enum>
@@ -328,7 +328,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QDialogButtonBox" name="buttonBox">
+             <widget class="QDialogButtonBox" name="zcc_buttonBox_goToNext">
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
@@ -351,8 +351,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>421</width>
-                  <height>171</height>
+                  <width>431</width>
+                  <height>181</height>
                  </rect>
                 </property>
                 <property name="styleSheet">
@@ -360,6 +360,9 @@
                 </property>
                 <property name="frameShape">
                  <enum>QFrame::Shape::WinPanel</enum>
+                </property>
+                <property name="lineWrapMode">
+                 <enum>QTextEdit::LineWrapMode::NoWrap</enum>
                 </property>
                 <property name="html">
                  <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -418,7 +421,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <item>
      <widget class="QLabel" name="zcc_label_protocolSlogan">
       <property name="text">
-       <string>MI protocol: Motion imaging </string>
+       <string>?? protocol: ****</string>
       </property>
      </widget>
     </item>
@@ -428,7 +431,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
  <resources/>
  <connections>
   <connection>
-   <sender>buttonBox</sender>
+   <sender>zcc_buttonBox_goToNext</sender>
    <signal>rejected()</signal>
    <receiver>Dialog</receiver>
    <slot>reject()</slot>

@@ -147,6 +147,8 @@ def format_check(file: pd.Series):
         output |= dict(status='failed', suspects=suspects)
         return output
 
+    # ----------------------------------------
+    # ---- SSVEP check ----
     if file['protocol'] == 'SSVEP':
         suspects, checks = _check_SSVEP(obj.raw)
 
@@ -158,12 +160,27 @@ def format_check(file: pd.Series):
 
         return output
 
+    # ----------------------------------------
+    # ---- P300 check ----
     if file['protocol'].startswith('P300'):
         suspects, checks = _check_P300(obj.raw)
 
         if any(suspects.values()):
             output |= dict(status='failed', checks=checks, suspects=suspects)
             logger.warning(f'P300 checks failed: {output}')
+        else:
+            output |= dict(status='passed', checks=checks, suspects=suspects)
+
+        return output
+
+    # ----------------------------------------
+    # ---- MI check ----
+    if file['protocol'].startswith('MI'):
+        suspects, checks = _check_MI(obj.raw)
+
+        if any(suspects.values()):
+            output |= dict(status='failed', checks=checks, suspects=suspects)
+            logger.warning(f'MI checks failed: {output}')
         else:
             output |= dict(status='passed', checks=checks, suspects=suspects)
 
@@ -254,6 +271,76 @@ def _check_P300(raw):
     except Exception:
         suspects['traceback'] = [traceback.format_exc()]
 
+    return suspects, checks
+
+
+def _check_MI(raw):
+    # Something I want to know
+    checks = dict(
+        ch_names=[],
+        sfreq=None,
+        event_id={},
+        total_length=None
+    )
+
+    # Something is wrong
+    suspects = dict(
+        channels=[],
+        sfreq=[],
+        n_events=[],
+        total_length=[],
+    )
+
+    def _check():
+        # --------------------
+        # Fetch information
+        ch_names = raw.info['ch_names']
+        sfreq = raw.info['sfreq']
+        events, event_id = mne.events_from_annotations(raw)
+        total_length = np.max([e[0] for e in events]) / \
+            sfreq if len(events) > 0 else None
+
+        checks.update(
+            ch_names=ch_names,
+            sfreq=sfreq,
+            event_id=event_id,
+            total_length=total_length)
+
+        # --------------------
+        # Check channels
+        must_ch_names = [
+            e.strip().upper()
+            for e in 'C3, C4, Cz'.split(',') if e.strip()]
+        ch_names = [e.upper() for e in ch_names]
+
+        for e in [e for e in must_ch_names if e not in ch_names]:
+            suspects['channels'].append(
+                f'The ch_names must contain {e}, which does not'
+            )
+
+        # --------------------
+        # Check sfreq not be less than 250 Hz
+        if sfreq < 250:
+            suspects['sfreq'].append(
+                f'The sfreq must not be less than 250 Hz, but the value is {
+                    sfreq}'
+            )
+
+        # --------------------
+        # Check total length not be less than 180 seconds
+        if total_length is None or total_length < 180:
+            suspects['total_length'].append(
+                f'The total length must not be less than 180 seconds, but the value is {
+                    total_length}'
+            )
+
+    try:
+        _check()
+    except Exception:
+        suspects['traceback'] = [traceback.format_exc()]
+
+    # --------------------
+    # No message is good message
     return suspects, checks
 
 

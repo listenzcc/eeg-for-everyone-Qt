@@ -23,7 +23,8 @@ from PySide6.QtUiTools import QUiLoader
 
 from .base_window import BaseWindow
 from .custom_table_model import CustomTableModel
-from .window_of_MI import MIWindow
+# from .window_of_MI import MIWindow
+from .window_of_setup_options import SetupOptionsWindow
 from . import logger, project_root, cache_path
 
 # --------------------
@@ -31,6 +32,20 @@ loader = QUiLoader()
 
 # %% ---- 2024-04-25 ------------------------
 # Function and class
+
+
+def pretty_traceback(message):
+    if isinstance(message, list):
+        return '\n'.join(message)
+    else:
+        return message
+
+
+def pretty_dict(dict_like, leading='\n  |\t'):
+    if isinstance(dict_like, dict):
+        return leading+leading.join(f'{k}:\t{v}' if k.lower() != 'traceback' else f'{k}:\t{pretty_traceback(v)}' for k, v in dict_like.items())
+    else:
+        return f'{dict_like}'
 
 
 def load_files_table(map):
@@ -92,11 +107,16 @@ class DataSelectionWindow(BaseWindow):
 
         def _accept():
             unknown_protocol = True
+            unknown_protocol = False
 
-            if self.protocol == 'MI':
-                window = MIWindow(self.chosen_files, self.window)
-                window.show()
-                unknown_protocol = False
+            window = SetupOptionsWindow(
+                self.chosen_files, self.protocol, self.window)
+            window.show()
+
+            # if self.protocol == 'MI':
+            #     window = SetupOptionsWindow(self.chosen_files, self.window)
+            #     window.show()
+            #     unknown_protocol = False
 
             if unknown_protocol:
                 logger.warning('Not support protocol: {self.protocol}')
@@ -213,7 +233,9 @@ class DataSelectionWindow(BaseWindow):
         def _select_failed_file():
             idx = self.listWidget_failedFiles.currentRow()
             file = files[idx]
-            text = '\n'.join(f'{k}: \t{v}' for k, v in file.items())
+            text = '\n\n'.join(
+                f'{k}: \t{pretty_dict(v)}'
+                for k, v in file.items())
             self.textBrowser_failedFiles.setText(text)
 
         self.listWidget_failedFiles.clear()
@@ -264,6 +286,8 @@ class DataSelectionWindow(BaseWindow):
             model.bind_tableView(self.tableView_validDataSelection)
             model.tableView.selectionModel().selectionChanged.disconnect()
             model.tableView.selectionModel().selectionChanged.connect(_on_select_file)
+            model.tableView.doubleClicked.disconnect()
+            model.tableView.doubleClicked.connect(_on_double_clicked)
             logger.debug('Updated tableView')
 
         self.lineEdit_pathFilter.setText('')
@@ -272,10 +296,21 @@ class DataSelectionWindow(BaseWindow):
 
         # --------------------
         # Files table
-        def _on_select_file(selected):
+        def _on_select_file(selected, deselected):
+            # The selected and deselected are both like
+            # [<PySide6.QtCore.QItemSelectionRange(QModelIndex(68,0,0x0,CustomTableModel(0x25b5ed2b0a0)),QModelIndex(68,3,0x0,CustomTableModel(0x25b5ed2b0a0))) at 0x0000025B6150C300>]
+
             se = model.on_select(selected)
             file = dict(se)
             self.update_candidate_file(file)
+
+        def _on_double_clicked(pnt):
+            file = self.filtered_files[pnt.row()]
+            self.update_candidate_file(file)
+
+            if file not in self.chosen_files:
+                self.chosen_files.append(file)
+            self.update_listWidget_chosenFiles()
 
         df = self.files_table.copy()
         df = df[df['protocol'] == self.protocol]
@@ -287,6 +322,8 @@ class DataSelectionWindow(BaseWindow):
         model.bind_tableView(self.tableView_validDataSelection)
         model.tableView.selectionModel().selectionChanged.disconnect()
         model.tableView.selectionModel().selectionChanged.connect(_on_select_file)
+        model.tableView.doubleClicked.disconnect()
+        model.tableView.doubleClicked.connect(_on_double_clicked)
         self.tableView_validDataSelection.setColumnWidth(1, 400)
 
     def update_candidate_file(self, file: dict = None):
@@ -301,10 +338,15 @@ class DataSelectionWindow(BaseWindow):
         """
 
         self.candidate_file = file
+
         text = ''
         if file is not None:
-            text = '\n'.join(f'{k}: \t{v}' for k, v in file.items())
+            text = '\n\n'.join(
+                f'{k}:\t{pretty_dict(v)}'
+                for k, v in file.items())
+
         self.textBrowser_candidateFileDetail.setText(text)
+
         logger.debug(f'Changed candidate file: {file}')
 
     def update_listWidget_chosenFiles(self):

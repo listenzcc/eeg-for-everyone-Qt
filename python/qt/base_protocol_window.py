@@ -53,7 +53,7 @@ class BaseProtocolWindow(BaseWindow):
     options = {}
     layout_path = None
 
-    def __init__(self, layout_path: Path, files: list, ClassOfDefaultOptions, parent=None):
+    def __init__(self, layout_path: Path, files: list, ClassOfDefaultOptions, parent):
         self.layout_path = layout_path
         super().__init__(loader.load(layout_path, parent))
         self._load_files(files)
@@ -110,6 +110,11 @@ class BaseProtocolWindow(BaseWindow):
         Loads default operations and handles option changes in the protocol window.
         ! It is designed to be executed **after** self.option_plainTextEdits is set.
 
+        It does multiple things:
+        1. Reload the chosen files;
+        2. Handle option changes in the protocol window, it also checks the format of the options;
+        3. It handles using default options operation to set back to the default options.
+
         Args:
             None
 
@@ -118,7 +123,7 @@ class BaseProtocolWindow(BaseWindow):
         """
 
         # --------------------
-        # Reset the chosenFiles's list to chosen_files
+        # 1. Reset the chosenFiles's list to chosen_files
         self.listWidget_chosenFiles.clear()
         n = len(self.chosen_files)
         self.listWidget_chosenFiles.addItems(
@@ -130,6 +135,7 @@ class BaseProtocolWindow(BaseWindow):
         logger.debug('Filled listWidget_chosenFiles')
 
         # --------------------
+        # 2. Handle option changes in the protocol window
         default_options = self.ClassOfDefaultOptions()
 
         def option_changed():
@@ -167,14 +173,19 @@ class BaseProtocolWindow(BaseWindow):
 
             logger.debug(f'Changed options: {self.options}')
 
-        # Reset the options with the default options
+        # --------------------
+        # 3. Reset the options with the default options
         for attr in [e for e in dir(default_options) if not e.startswith('_')]:
             value = default_options.__getattribute__(attr)
-            self.option_plainTextEdits[attr].setPlainText(f'{value}')
-            self.option_plainTextEdits[attr].textChanged.disconnect()
-            self.option_plainTextEdits[attr].textChanged.connect(
-                option_changed)
-            logger.debug(f'Set {attr} to {value}')
+            try:
+                self.option_plainTextEdits[attr].setPlainText(f'{value}')
+                self.option_plainTextEdits[attr].textChanged.disconnect()
+                self.option_plainTextEdits[attr].textChanged.connect(
+                    option_changed)
+                logger.debug(f'Set UI {attr} to {value}')
+            except Exception as err:
+                logger.warning(
+                    f'Failed set UI {attr} to {value}, error: {err}')
 
         option_changed()
 

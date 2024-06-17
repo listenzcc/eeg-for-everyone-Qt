@@ -6,8 +6,31 @@
 
 ## UI design
 
-I use the _pyside6-designer.exe_ for UI design.
-The _*.ui_ files are placed in the [layout](./layout) folder.
+I use the `pyside6-designer.exe` for UI design.
+The `*.ui` files are placed in the [layout](./layout) folder.
+
+### How do I connect the layout with the operations
+
+The main idea is setup the _objectName_ as the format of _zcc_objectType_objectOperation_.
+And the _objectType_objectOperation_ part is set on the class to bind it.
+See the [base_window.py](./python/qt/base_protocol_window.py), `BaseWindow` class for details.
+
+- The class's attributes are kept as `None` if the UI does not support it;
+- The `warning` arises when the UI has some object but the class does not handle it.
+
+```python
+def _assign_children(self):
+    for k, v in self.children.items():
+        attr = k[len(self.known_component_prefix):]
+
+        if not hasattr(self, attr):
+            logger.warning(
+                f'Unknown attribute (UI has it, but window does not.): {attr}')
+
+        self.__setattr__(attr, v)
+
+        logger.debug(f'Assigned child: {attr} = {v}')
+```
 
 ### Main window
 
@@ -15,9 +38,9 @@ The main entrance of the application is the [data_selection.ui](./layout/data_se
 
 #### How does it open the protocols UI?
 
-I unbind the _accepted()_ signal of the buttonBox slots,
+I unbind the `accepted()` signal of the buttonBox slots,
 and reassign it with protocol UI starter.
-Since the _rejected()_ signal is kept, it closes the window immediately.
+Since the `rejected()` signal is kept, it closes the window immediately.
 
 ![main-window-buttonBox](./doc/develop-manual/main-window-buttonBox.png "main-window-buttonBox")
 
@@ -44,10 +67,10 @@ def handle_goToNext_events(self):
     self.buttonBox_goToNext.accepted.connect(_accept)
 ```
 
-### Motion imaging UI
+### The base of UI
 
-The motion imaging protocol UI is the [MI.ui](./layout/MI.ui),
-which is handled by the _MIWindow_ class.
-The _window.show()_ method shows it.
+The base layout of setup options UI is the [setup_options.ui](./layout/setup_options.ui),
+which is handled by the `SetupOptionsWindow` class.
+The `window.show()` method shows it.
 
 ## Appendix

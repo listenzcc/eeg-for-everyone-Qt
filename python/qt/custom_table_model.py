@@ -21,7 +21,7 @@ Functions:
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QAbstractItemView
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QPersistentModelIndex
 
 
 class CustomTableModel(QAbstractTableModel):
@@ -75,6 +75,7 @@ class CustomTableModel(QAbstractTableModel):
 
     def on_select(self, selected):
         selected_row = selected.toList()[0].top()
+        self.tableView.viewport().update()
         return self.df.iloc[selected_row]
 
 

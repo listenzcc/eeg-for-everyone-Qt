@@ -31,6 +31,7 @@ project_root = Path(__file__).parent.parent.parent
 
 logger_path = project_root.joinpath(f'log/{project_name}.log')
 cache_path = project_root.joinpath('cache')
+asset_path = project_root.joinpath('asset')
 
 
 # %% ---- 2024-04-23 ------------------------
