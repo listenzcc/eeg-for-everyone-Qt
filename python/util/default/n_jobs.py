@@ -1,11 +1,11 @@
 """
-File: blda.py
+File: n_jobs.py
 Author: Chuncheng Zhang
 Date: 2024-06-17
 Copyright & Email: chuncheng.zhang@ia.ac.cn
 
 Purpose:
-    BLDA classification method
+    Amazing things
 
 Functions:
     1. Requirements and constants
@@ -18,19 +18,11 @@ Functions:
 
 # %% ---- 2024-06-17 ------------------------
 # Requirements and constants
+n_jobs = 32
 
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
-class BLDA(object):
-    def __init__(self):
-        pass
-
-    def fit(self, X, y):
-        '''
-        X shape is (trials, channels, time-points)
-        y shape is (trials, )
-        '''
 
 
 # %% ---- 2024-06-17 ------------------------

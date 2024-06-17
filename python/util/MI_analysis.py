@@ -24,9 +24,7 @@ import matplotlib.pyplot as plt
 
 from . import logger
 from .analysis.base_analysis import BaseAnalysis
-# from .load_epochs import EpochsObject
-
-n_jobs = 32
+from .default.n_jobs import n_jobs
 
 # %% ---- 2024-06-12 ------------------------
 # Function and class
@@ -72,8 +70,12 @@ def compute_tfr_morlet(
 class MI_Analysis(BaseAnalysis):
     protocol = 'MI'
 
-    def __init__(self, protocol: str = None, files: list = [], options: dict = {}):
-        super().__init__(protocol, files, options)
+    def __init__(self, protocol: str = None, files: list = None, options: dict = None):
+        if files is None:
+            files = []
+        if options is None:
+            options = {}
+        super(MI_Analysis, self).__init__(protocol, files, options)
         self.load_methods()
 
     def load_methods(self):

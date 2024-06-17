@@ -27,8 +27,11 @@ p = Path(__file__).parent.parent  # noqa
 sys.path.append(p.as_posix())  # noqa
 
 from util import logger, project_root, cache_path, asset_path
+
 from util.default import default_options
+
 from util.MI_analysis import MI_Analysis
+from util.P300_analysis import P300_Analysis
 from util.analysis.base_analysis import BaseAnalysis
 
 

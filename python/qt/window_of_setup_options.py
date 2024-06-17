@@ -19,6 +19,8 @@ Functions:
 # %% ---- 2024-04-29 ------------------------
 # Requirements and constants
 import time
+import random
+from threading import Thread
 from datetime import datetime
 
 from PySide6 import QtWidgets
@@ -28,7 +30,7 @@ from .base.base_protocol_window import BaseProtocolWindow
 from .window_of_analysis_results import AnalysisResultsWindow
 
 from . import default_options
-from . import MI_Analysis, BaseAnalysis
+from . import MI_Analysis, P300_Analysis, BaseAnalysis
 from . import logger, project_root, cache_path
 
 # --------------------
@@ -37,6 +39,20 @@ layout_path = project_root.joinpath('layout/setup_options.ui')
 
 # %% ---- 2024-04-29 ------------------------
 # Function and class
+
+default_options_candidates = {
+    'MI': default_options.MIDefaultOptions,
+    'P300(3X3)': default_options.P300DefaultOptions,
+    'P300(二项式)': default_options.P300DefaultOptions,
+    'default': default_options.AnyDefaultOptions
+}
+
+analysis_candidates = {
+    'MI': MI_Analysis,
+    'P300(3X3)': P300_Analysis,
+    'P300(二项式)': P300_Analysis,
+    'default': BaseAnalysis
+}
 
 
 class SetupOptionsWindow(BaseProtocolWindow):
@@ -49,7 +65,8 @@ class SetupOptionsWindow(BaseProtocolWindow):
     plainTextEdit_channels = None
     plainTextEdit_reject = None
     plainTextEdit_epochsKwargs = None
-    buttonBox_goToNext = None
+    progressBar: QtWidgets.QProgressBar = None
+    buttonBox_goToNext: QtWidgets.QDialogButtonBox = None
     textBrowser_tracebackMessage: QtWidgets.QListWidget = None
 
     # --------------------
@@ -58,14 +75,8 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
     def __init__(self, files: list, protocol: str, parent=None):
         # Initialize BaseProtocolWindow
-        if protocol == 'MI':
-            class_of_default_options = default_options.MIDefaultOptions
-        elif protocol == 'P300(3X3)':
-            class_of_default_options = default_options.P300DefaultOptions
-        elif protocol == 'P300(二项式)':
-            class_of_default_options = default_options.P300DefaultOptions
-        else:
-            class_of_default_options = default_options.AnyDefaultOptions
+        class_of_default_options = default_options_candidates.get(
+            protocol, default_options_candidates['default'])
 
         super().__init__(
             layout_path=layout_path,
@@ -120,20 +131,18 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     '\n\n'.join(traceback_message))
                 self.textBrowser_tracebackMessage.repaint()
 
+            Thread(target=self._progress_bar_engage, daemon=True).start()
+            self.buttonBox_goToNext.setEnabled(False)
+
             try:
                 # ----------------------------------------
                 # ---- Start analysis ----
                 report_traceback()
                 tic = time.time()
 
-                if protocol == 'MI':
-                    current_analysis = MI_Analysis(protocol, files, options)
-                elif protocol == 'P300(3X3)':
-                    class_of_default_options = default_options.P300DefaultOptions
-                elif protocol == 'P300(二项式)':
-                    class_of_default_options = default_options.P300DefaultOptions
-                else:
-                    current_analysis = BaseAnalysis(protocol, files, options)
+                _analysis_cls: BaseAnalysis = analysis_candidates.get(
+                    protocol, analysis_candidates['default'])
+                current_analysis = _analysis_cls(protocol, files, options)
 
                 costs = time.time() - tic
                 traceback_message.append(
@@ -166,19 +175,31 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     'background-color: #fedfe1')
 
             finally:
+                self._progress_bar_going_flag = False
+                self.buttonBox_goToNext.setEnabled(True)
                 logger.debug(
                     f'Accepted options: {protocol} | {options} | {files}')
 
+        self.buttonBox_goToNext.accepted.disconnect()
         self.buttonBox_goToNext.accepted.connect(_accept)
 
+    def _progress_bar_engage(self):
+        self._progress_bar_going_flag = True
+
+        t = 0
+        while self._progress_bar_going_flag:
+            t += random.randint(1, 5)
+            t %= 100
+            self.progressBar.setValue(t)
+            time.sleep(random.random())
+
+        self.progressBar.setValue(100)
 
 # %% ---- 2024-04-29 ------------------------
 # Play ground
 
-
 # %% ---- 2024-04-29 ------------------------
 # Pending
-
 
 # %% ---- 2024-04-29 ------------------------
 # Pending

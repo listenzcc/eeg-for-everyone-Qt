@@ -74,7 +74,7 @@ class AnalysisResultsWindow(BaseWindow):
 
     def __init__(self, analysis_obj, parent):
         window = loader.load(layout_path, parent)
-        super().__init__(window)
+        super(AnalysisResultsWindow, self).__init__(window)
         self._set_window_title(f'Results of {analysis_obj.protocol}')
 
         self.on_load(analysis_obj)
@@ -111,15 +111,46 @@ class AnalysisResultsWindow(BaseWindow):
         self.comboBox_selectMethod.clear()
         for method in self.analysis_obj.methods:
             self.comboBox_selectMethod.addItem(method)
+            logger.debug(f'Appended method: {method}')
 
         def on_changed():
             self.handle_accept()
             self.comboBox_selectMethod.setFocus()
 
+        self.comboBox_selectMethod.currentIndexChanged.disconnect()
         self.comboBox_selectMethod.currentIndexChanged.connect(on_changed)
+        # self.comboBox_selectMethod.currentIndexChanged.connect(
+        #     self.handle_accept)
+
+    def on_select_file(self, idx: int = None):
+        '''
+        The file idx is selected,
+        update the self.comboBox_selectEventId by the evoked_id of the epochs 
+        '''
+        if idx is None:
+            idx = self.comboBox_selectFile.currentIndex()
+
+        epochs = self.analysis_obj.objs[idx].epochs
+
+        self.comboBox_selectEventId.clear()
+        logger.debug(f'Selected epochs: {epochs}')
+        for k in epochs.event_id:
+            n = len(epochs[k])
+            self.comboBox_selectEventId.addItem(f'{k} | {n}')
+
+        def on_changed():
+            self.handle_accept()
+            self.comboBox_selectEventId.setFocus()
+
+        self.comboBox_selectEventId.currentIndexChanged.disconnect()
+        self.comboBox_selectEventId.currentIndexChanged.connect(on_changed)
+        # self.comboBox_selectEventId.currentIndexChanged.connect(
+        #     self.handle_accept)
+
+        self.comboBox_selectFile.setFocus()
 
     def handle_accept(self):
-        print('****************************************************************')
+        print('**** Analysis ****')
         # ----------------------------------------
         # ---- Get output's geometry ----
         width = self.label_output.geometry().width()
@@ -140,8 +171,13 @@ class AnalysisResultsWindow(BaseWindow):
         method_name = self.comboBox_selectMethod.currentText()
         logger.debug(f'Submit for {method_name}, {idx}, {event_id}')
 
+        if not len(event_id):
+            logger.warning(f'Invalid event_id: {event_id}')
+            return
+
         # ----------------------------------------
         # ---- Compute with necessary options: idx and event_id ----
+        self._toggle_input_components(False)
         try:
             fig = self.analysis_obj.methods[method_name](
                 idx, event_id)
@@ -179,32 +215,15 @@ class AnalysisResultsWindow(BaseWindow):
             logger.error(error_title)
 
         finally:
+            self._toggle_input_components(True)
             return
 
-    def on_select_file(self, idx: int = None):
-        '''
-        The file idx is selected,
-        update the self.comboBox_selectEventId by the evoked_id of the epochs 
-        '''
-        if idx is None:
-            idx = self.comboBox_selectFile.currentIndex()
-
-        epochs = self.analysis_obj.objs[idx].epochs
-
-        self.comboBox_selectEventId.clear()
-        logger.debug(f'Selected epochs: {epochs}')
-        for k in epochs.event_id:
-            n = len(epochs[k])
-            self.comboBox_selectEventId.addItem(f'{k} | {n}')
-
-        def on_changed():
-            self.handle_accept()
-            self.comboBox_selectEventId.setFocus()
-
-        self.comboBox_selectEventId.currentIndexChanged.connect(on_changed)
-
-        self.comboBox_selectFile.setFocus()
-
+    def _toggle_input_components(self, enabled: bool = True):
+        self.comboBox_selectFile.setEnabled(enabled)
+        self.comboBox_selectEventId.setEnabled(enabled)
+        self.comboBox_selectMethod.setEnabled(enabled)
+        self.buttonBox_submit.setEnabled(enabled)
+        logger.debug(f'Toggle input components as enabled: {enabled}')
 
 # %% ---- 2024-06-14 ------------------------
 # Play ground

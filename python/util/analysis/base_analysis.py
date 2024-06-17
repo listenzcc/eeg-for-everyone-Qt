@@ -63,6 +63,8 @@ class BaseAnalysis(object):
         logger.debug(
             f'Initializing with {self.protocol}, {self.files}, {self.options}')
 
+        print('**********', id(self))
+
     def pipeline(self):
         self.load_raws()
         self._load_public_methods()
@@ -83,6 +85,8 @@ class BaseAnalysis(object):
         self.objs = objs
 
     def _load_public_methods(self):
+        # TODO Clear the methods
+        self.methods.clear()
         self.methods['Plot Events'] = self._method_plot_events
         self.methods['Plot Sensors'] = self._method_plot_sensors
         self.methods['Plot Evoked'] = self._method_plot_evoked
@@ -99,6 +103,9 @@ class BaseAnalysis(object):
         return fig
 
     def _method_plot_evoked(self, idx, event_id):
+        print(event_id)
+        print(self.objs[idx].epochs)
+
         epochs = self.objs[idx].epochs[event_id]
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')

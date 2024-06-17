@@ -321,7 +321,7 @@
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
-             <widget class="QProgressBar" name="progressBar">
+             <widget class="QProgressBar" name="zcc_progressBar">
               <property name="value">
                <number>24</number>
               </property>
