@@ -27,7 +27,7 @@ from PySide6 import QtWidgets
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 
-from .base_window import BaseWindow
+from .base.base_window import BaseWindow
 from . import logger, project_root, cache_path, asset_path
 
 

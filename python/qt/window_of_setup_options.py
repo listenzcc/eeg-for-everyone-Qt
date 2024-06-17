@@ -24,7 +24,7 @@ from datetime import datetime
 from PySide6 import QtWidgets
 from PySide6.QtUiTools import QUiLoader
 
-from .base_protocol_window import BaseProtocolWindow
+from .base.base_protocol_window import BaseProtocolWindow
 from .window_of_analysis_results import AnalysisResultsWindow
 
 from . import default_options

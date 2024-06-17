@@ -42,29 +42,28 @@ class EpochsObject(RawObject):
         # still, if can not find any event_ids of selected, using all event_ids instead.
         eventIds = options.get('eventIds', ['all'])
 
-        if not 'all' in eventIds:
-            selected_event_id = {
-                k: v
-                for k, v in event_id.items()
-                if k in eventIds}
-
-            if selected_event_id:
-                events, event_id = mne.events_from_annotations(
-                    self.raw, selected_event_id)
-            else:
-                logger.warning(f'Can not find any event_ids being selected')
-        else:
+        # ----------------------------------------
+        # ---- Select eventIds ----
+        if 'all' in eventIds:
             logger.debug('Selecting all the event_ids as required')
+
+        elif selected_event_id := {
+            k: v for k, v in event_id.items() if k in eventIds
+        }:
+            events, event_id = mne.events_from_annotations(
+                self.raw, selected_event_id)
+        else:
+            logger.warning('Can not find any event_ids being selected')
 
         logger.debug(
             f'Found event_id: {event_id}, events: {len(events)} records')
 
         kwargs = dict(picks=['eeg'], detrend=0, event_repeated='drop')
-        kwargs.update(options.get('epochTimes', {}))
-        kwargs.update(options.get('epochsKwargs', {}))
+        kwargs |= options.get('epochTimes', {})
+        kwargs |= options.get('epochsKwargs', {})
 
         if reject := options.get('reject'):
-            kwargs.update(dict(reject=reject))
+            kwargs |= dict(reject=reject)
 
         logger.debug(f'Getting epochs with kwargs: {kwargs}')
 

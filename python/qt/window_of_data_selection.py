@@ -21,8 +21,8 @@ Functions:
 import pandas as pd
 from PySide6.QtUiTools import QUiLoader
 
-from .base_window import BaseWindow
-from .custom_table_model import CustomTableModel
+from .base.base_window import BaseWindow
+from .base.custom_table_model import CustomTableModel
 # from .window_of_MI import MIWindow
 from .window_of_setup_options import SetupOptionsWindow
 from . import logger, project_root, cache_path
@@ -35,10 +35,7 @@ loader = QUiLoader()
 
 
 def pretty_traceback(message):
-    if isinstance(message, list):
-        return '\n'.join(message)
-    else:
-        return message
+    return '\n'.join(message) if isinstance(message, list) else message
 
 
 def pretty_dict(dict_like, leading='\n  |\t'):

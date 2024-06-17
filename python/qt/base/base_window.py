@@ -24,7 +24,7 @@ Functions:
 # Requirements and constants
 from PySide6 import QtCore, QtWidgets
 
-from . import logger
+from .. import logger
 
 # --------------------
 known_component_prefix = 'zcc_'

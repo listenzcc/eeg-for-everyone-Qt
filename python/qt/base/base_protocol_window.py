@@ -29,7 +29,7 @@ from pathlib import Path
 from PySide6.QtUiTools import QUiLoader
 
 from .base_window import BaseWindow
-from . import logger
+from .. import logger
 
 loader = QUiLoader()
 
