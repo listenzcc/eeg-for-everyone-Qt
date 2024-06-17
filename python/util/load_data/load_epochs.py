@@ -22,7 +22,7 @@ Functions:
 import mne
 import pandas as pd
 
-from . import logger
+from .. import logger
 from .load_raw import RawObject
 
 

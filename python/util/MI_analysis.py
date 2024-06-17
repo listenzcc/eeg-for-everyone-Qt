@@ -23,7 +23,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from . import logger
-from .base_analysis import BaseAnalysis
+from .analysis.base_analysis import BaseAnalysis
 # from .load_epochs import EpochsObject
 
 n_jobs = 32

@@ -22,8 +22,8 @@ import mne
 import numpy as np
 import matplotlib.pyplot as plt
 
-from . import logger
-from .load_epochs import EpochsObject
+from .. import logger
+from ..load_data.load_epochs import EpochsObject
 
 
 # %% ---- 2024-06-14 ------------------------
@@ -40,20 +40,22 @@ class BaseAnalysis(object):
     # ---- Analysis methods ----
     methods = {}
 
-    def __init__(self, protocol: str = None, files: list = [], options: dict = {}):
+    def __init__(self, protocol: str = None, files: list = None, options: dict = None):
+        if files is None:
+            files = []
+
+        if options is None:
+            options = {}
+
         if protocol:
             self.protocol = protocol
 
-        # Clear the self.files is necessary, since the class is reuseable
-        self.files = []
         self.objs = []
         self.options = {}
-
-        # Fill files
-        self.files.extend(files)
+        self.files = list(files)
 
         # Fill options
-        self.options.update(options)
+        self.options |= options
 
         # Working pipeline, fill objs
         self.pipeline()
@@ -76,7 +78,7 @@ class BaseAnalysis(object):
 
             obj.get_epochs(self.options)
 
-        assert len(objs) > 0, 'No raw data available'
+        assert objs, 'No raw data available'
 
         self.objs = objs
 
@@ -87,9 +89,7 @@ class BaseAnalysis(object):
 
     def _method_plot_events(self, idx, event_id):
         epochs = self.objs[idx].epochs
-        fig = mne.viz.plot_events(
-            epochs.events, epochs.info['sfreq'], show=False)
-        return fig
+        return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], show=False)
 
     def _method_plot_sensors(self, idx, event_id):
         epochs = self.objs[idx].epochs[event_id]
@@ -102,11 +102,11 @@ class BaseAnalysis(object):
         epochs = self.objs[idx].epochs[event_id]
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')
-        fig = evoked.plot_joint(
+        return evoked.plot_joint(
             title=f'Evoked: {event_id} | {len(epochs)}',
             show=False,
-            exclude=['ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'])
-        return fig
+            exclude=['ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'],
+        )
 
 
 # %% ---- 2024-06-14 ------------------------

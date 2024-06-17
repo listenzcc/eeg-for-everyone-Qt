@@ -113,11 +113,6 @@ class DataSelectionWindow(BaseWindow):
                 self.chosen_files, self.protocol, self.window)
             window.show()
 
-            # if self.protocol == 'MI':
-            #     window = SetupOptionsWindow(self.chosen_files, self.window)
-            #     window.show()
-            #     unknown_protocol = False
-
             if unknown_protocol:
                 logger.warning('Not support protocol: {self.protocol}')
 

@@ -21,7 +21,7 @@ Functions:
 import mne
 import pandas as pd
 
-from . import logger
+from .. import logger
 
 
 # %% ---- 2024-04-23 ------------------------

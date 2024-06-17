@@ -31,7 +31,7 @@ from typing import Any
 from tqdm.auto import tqdm
 
 from . import logger, project_root
-from .load_raw import RawObject
+from .load_data.load_raw import RawObject
 
 
 # %% ---- 2024-04-23 ------------------------

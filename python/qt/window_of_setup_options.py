@@ -26,7 +26,10 @@ from PySide6.QtUiTools import QUiLoader
 
 from .base_protocol_window import BaseProtocolWindow
 from .window_of_analysis_results import AnalysisResultsWindow
-from . import logger, project_root, cache_path, default_options, MI_Analysis, BaseAnalysis
+
+from . import default_options
+from . import MI_Analysis, BaseAnalysis
+from . import logger, project_root, cache_path
 
 # --------------------
 loader = QUiLoader()
@@ -55,11 +58,14 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
     def __init__(self, files: list, protocol: str, parent=None):
         # Initialize BaseProtocolWindow
-
-        class_of_default_options = default_options.AnyDefaultOptions
-
         if protocol == 'MI':
             class_of_default_options = default_options.MIDefaultOptions
+        elif protocol == 'P300(3X3)':
+            class_of_default_options = default_options.P300DefaultOptions
+        elif protocol == 'P300(二项式)':
+            class_of_default_options = default_options.P300DefaultOptions
+        else:
+            class_of_default_options = default_options.AnyDefaultOptions
 
         super().__init__(
             layout_path=layout_path,
@@ -79,7 +85,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
         self.handle_goToNext_events()
 
-        logger.info('Initialized MIWindow')
+        logger.info(f'Initialized with protocol {protocol}')
 
     def bind_options_with_textEdits(self):
         """
@@ -122,6 +128,10 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
                 if protocol == 'MI':
                     current_analysis = MI_Analysis(protocol, files, options)
+                elif protocol == 'P300(3X3)':
+                    class_of_default_options = default_options.P300DefaultOptions
+                elif protocol == 'P300(二项式)':
+                    class_of_default_options = default_options.P300DefaultOptions
                 else:
                     current_analysis = BaseAnalysis(protocol, files, options)
 
