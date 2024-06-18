@@ -63,8 +63,6 @@ class BaseAnalysis(object):
         logger.debug(
             f'Initializing with {self.protocol}, {self.files}, {self.options}')
 
-        print('**********', id(self))
-
     def pipeline(self):
         self.load_raws()
         self._load_public_methods()
@@ -93,7 +91,7 @@ class BaseAnalysis(object):
 
     def _method_plot_events(self, idx, event_id):
         epochs = self.objs[idx].epochs
-        return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], show=False)
+        return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], event_id=epochs.event_id, show=False)
 
     def _method_plot_sensors(self, idx, event_id):
         epochs = self.objs[idx].epochs[event_id]

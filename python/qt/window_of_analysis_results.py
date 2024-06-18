@@ -55,8 +55,7 @@ def img_to_pixmap(img, width, height):
         # if img is taller
         img = img.resize((int(height*r), height))
 
-    pixmap = QPixmap.fromImage(ImageQt(img))
-    return pixmap
+    return QPixmap.fromImage(ImageQt(img))
 
 
 class AnalysisResultsWindow(BaseWindow):
@@ -119,8 +118,6 @@ class AnalysisResultsWindow(BaseWindow):
 
         self.comboBox_selectMethod.currentIndexChanged.disconnect()
         self.comboBox_selectMethod.currentIndexChanged.connect(on_changed)
-        # self.comboBox_selectMethod.currentIndexChanged.connect(
-        #     self.handle_accept)
 
     def on_select_file(self, idx: int = None):
         '''
@@ -144,8 +141,6 @@ class AnalysisResultsWindow(BaseWindow):
 
         self.comboBox_selectEventId.currentIndexChanged.disconnect()
         self.comboBox_selectEventId.currentIndexChanged.connect(on_changed)
-        # self.comboBox_selectEventId.currentIndexChanged.connect(
-        #     self.handle_accept)
 
         self.comboBox_selectFile.setFocus()
 
