@@ -18,7 +18,12 @@ Functions:
 
 # %% ---- 2024-06-14 ------------------------
 # Requirements and constants
+import time
+import random
 import matplotlib.pyplot as plt
+
+from threading import Thread
+from datetime import datetime
 
 from PIL import Image
 from PIL.ImageQt import ImageQt
@@ -65,6 +70,7 @@ class AnalysisResultsWindow(BaseWindow):
     comboBox_selectFile: QtWidgets.QComboBox = None
     comboBox_selectEventId: QtWidgets.QComboBox = None
     comboBox_selectMethod: QtWidgets.QComboBox = None
+    label_progressing: QtWidgets.QLabel = None
     buttonBox_submit = None
 
     # ----------------------------------------
@@ -172,8 +178,12 @@ class AnalysisResultsWindow(BaseWindow):
 
         # ----------------------------------------
         # ---- Compute with necessary options: idx and event_id ----
+
         self._toggle_input_components(False)
         try:
+            # Start progressing bar updating
+            Thread(target=self._progress_bar_engage, daemon=True).start()
+
             fig = self.analysis_obj.methods[method_name](
                 idx, event_id)
             fig.canvas.draw()
@@ -210,7 +220,9 @@ class AnalysisResultsWindow(BaseWindow):
             logger.error(error_title)
 
         finally:
+            # Release locking input components and finish the progress bar updating
             self._toggle_input_components(True)
+            self._progress_bar_going_flag = False
             return
 
     def _toggle_input_components(self, enabled: bool = True):
@@ -219,6 +231,28 @@ class AnalysisResultsWindow(BaseWindow):
         self.comboBox_selectMethod.setEnabled(enabled)
         self.buttonBox_submit.setEnabled(enabled)
         logger.debug(f'Toggle input components as enabled: {enabled}')
+
+    def _progress_bar_engage(self):
+        self._progress_bar_going_flag = True
+
+        tic = time.time()
+
+        while self._progress_bar_going_flag:
+            time.sleep(random.random() * 0.1)
+            txt = pseudo_progressing_report()
+            passed = time.time() - tic
+            self.label_progressing.setText(f'{passed:0.2f} | {txt}')
+            self.label_progressing.repaint()
+
+        self.label_progressing.setText(
+            f'Cost {passed:0.2f} seconds | Finished at {datetime.now()}')
+
+
+def pseudo_progressing_report():
+    chars = 'abcdefghijklmnopqrstuvwxyz           '
+    k = random.randint(10, 30)
+    return ''.join(random.choices(chars, k=k))
+
 
 # %% ---- 2024-06-14 ------------------------
 # Play ground

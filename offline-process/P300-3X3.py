@@ -84,6 +84,7 @@ for _, selected in tqdm(data.iterrows()):
     # Make and save dataFrame
     df = pd.DataFrame(events, columns=['timestamp', 'duration', 'event'])
     df['label'] = label
+    df['_real_event'] = real_events
     dst = selected['path'].parent.joinpath('label.csv')
     df.to_csv(dst)
 

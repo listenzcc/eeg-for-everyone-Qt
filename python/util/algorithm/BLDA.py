@@ -31,6 +31,7 @@ class BLDA(object):
         X shape is (trials, channels, time-points)
         y shape is (trials, )
         '''
+        pass
 
 
 # %% ---- 2024-06-17 ------------------------

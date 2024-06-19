@@ -61,17 +61,17 @@ def fetch_events(selected):
 
 
 # Experiment design
-array_36 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789-'
+array_36 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789_'
 grouped_event_id = {
     '1': 'ABCDEF2',
     '2': 'GHIJKL9',
     '3': 'MNOPQR8',
     '4': 'ASTUVWX',
     '5': 'BHYZ134',
-    '6': 'CIO567-',
+    '6': 'CIO567_',
     '7': 'DJPV',
     '8': 'EKQW3',
-    '9': 'FLRX4-',
+    '9': 'FLRX4_',
     '10': 'GMSY25',
     '11': 'NTZ69',
     '12': 'U178',
@@ -105,6 +105,7 @@ for _, selected in tqdm(data.iterrows()):
     # Make and save dataFrame
     df = pd.DataFrame(events, columns=['timestamp', 'duration', 'event'])
     df['label'] = label
+    df['_real_event'] = real_events
     dst = selected['path'].parent.joinpath('label.csv')
     df.to_csv(dst)
 

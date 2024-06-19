@@ -38,7 +38,14 @@ class AnyDefaultOptions:
     epochTimes = dict(tmin=-1.0, tmax=5.0)
     freqBand = dict(freq_l=1.0, freq_h=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
-    epochsKwargs = dict(baseline=(None, 0), decim=10)
+
+    # --------------------
+    epochsKwargs = dict(
+        baseline=(None, 0),
+        detrend=1,
+        decim=10,
+        event_repeated='drop'
+    )
 
 
 class MIDefaultOptions:
@@ -57,7 +64,14 @@ class MIDefaultOptions:
     epochTimes = dict(tmin=-1.0, tmax=5.0)
     freqBand = dict(freq_l=1.0, freq_h=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
-    epochsKwargs = dict(baseline=(None, 0), decim=10)
+
+    # --------------------
+    epochsKwargs = dict(
+        baseline=(None, 0),
+        detrend=1,
+        decim=10,
+        event_repeated='drop'
+    )
 
 
 class P300DefaultOptions:
@@ -68,7 +82,7 @@ class P300DefaultOptions:
 
     # --------------------
     short_name = 'P300'
-    long_name = 'Positive peak on 300ms'
+    long_name = 'Positive peak at 300ms'
 
     # --------------------
     channels = [
@@ -80,7 +94,14 @@ class P300DefaultOptions:
     epochTimes = dict(tmin=-0.5, tmax=1.0)
     freqBand = dict(freq_l=1.0, freq_h=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
-    epochsKwargs = dict(baseline=(None, 0), decim=10)
+
+    # --------------------
+    epochsKwargs = dict(
+        baseline=(None, 0),
+        detrend=1,
+        decim=10,
+        event_repeated='drop'
+    )
 
 
 # %% ---- 2024-06-03 ------------------------

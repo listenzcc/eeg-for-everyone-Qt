@@ -101,9 +101,6 @@ class BaseAnalysis(object):
         return fig
 
     def _method_plot_evoked(self, idx, event_id):
-        print(event_id)
-        print(self.objs[idx].epochs)
-
         epochs = self.objs[idx].epochs[event_id]
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')
