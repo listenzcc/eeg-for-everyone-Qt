@@ -30,7 +30,7 @@ from .base.base_protocol_window import BaseProtocolWindow
 from .window_of_analysis_results import AnalysisResultsWindow
 
 from . import default_options
-from . import MI_Analysis, P300_Analysis, BaseAnalysis
+from . import MI_Analysis, P300_Analysis, SSVEP_Analysis, BaseAnalysis
 from . import logger, project_root, cache_path
 
 # --------------------
@@ -44,6 +44,7 @@ default_options_candidates = {
     'MI': default_options.MIDefaultOptions,
     'P300(3X3)': default_options.P300DefaultOptions,
     'P300(二项式)': default_options.P300DefaultOptions,
+    'SSVEP': default_options.SSVEPDefaultOptions,
     'default': default_options.AnyDefaultOptions
 }
 
@@ -51,7 +52,8 @@ analysis_candidates = {
     'MI': MI_Analysis,
     'P300(3X3)': P300_Analysis,
     'P300(二项式)': P300_Analysis,
-    'default': BaseAnalysis
+    'SSVEP': SSVEP_Analysis,
+    'default': BaseAnalysis,
 }
 
 

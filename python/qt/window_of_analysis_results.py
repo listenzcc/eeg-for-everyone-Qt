@@ -20,6 +20,8 @@ Functions:
 # Requirements and constants
 import time
 import random
+import traceback
+import contextlib
 import matplotlib.pyplot as plt
 
 from threading import Thread
@@ -137,9 +139,9 @@ class AnalysisResultsWindow(BaseWindow):
 
         self.comboBox_selectEventId.clear()
         logger.debug(f'Selected epochs: {epochs}')
-        for k in epochs.event_id:
+        for k, v in epochs.event_id.items():
             n = len(epochs[k])
-            self.comboBox_selectEventId.addItem(f'{k} | {n}')
+            self.comboBox_selectEventId.addItem(f'{k}\t: {v}\t({n} items)')
 
         def on_changed():
             self.handle_accept()
@@ -160,20 +162,22 @@ class AnalysisResultsWindow(BaseWindow):
 
         # ----------------------------------------
         # ---- Place the computing img ----
-        pixmap = img_to_pixmap(asset_imgs.get('computing'), width, height)
-        self.label_output.setPixmap(pixmap)
-        self.label_output.repaint()
+        with contextlib.suppress(Exception):
+            pixmap = img_to_pixmap(asset_imgs.get('computing'), width, height)
+            self.label_output.setPixmap(pixmap)
+            self.label_output.repaint()
 
         # ----------------------------------------
         # ---- Check current options ----
-        idx = self.comboBox_selectFile.currentIndex()
-        event_id = self.comboBox_selectEventId.currentText()
-        event_id = event_id.split('|')[0].strip()
+        selected_idx = self.comboBox_selectFile.currentIndex()
+        selected_event_id = self.comboBox_selectEventId.currentText()
+        selected_event_id = selected_event_id.split(':')[0].strip()
         method_name = self.comboBox_selectMethod.currentText()
-        logger.debug(f'Submit for {method_name}, {idx}, {event_id}')
+        logger.debug(
+            f'Submit for {method_name}, {selected_idx}, {selected_event_id}')
 
-        if not len(event_id):
-            logger.warning(f'Invalid event_id: {event_id}')
+        if not len(selected_event_id):
+            logger.warning(f'Invalid event_id: {selected_event_id}')
             return
 
         # ----------------------------------------
@@ -185,7 +189,7 @@ class AnalysisResultsWindow(BaseWindow):
             Thread(target=self._progress_bar_engage, daemon=True).start()
 
             fig = self.analysis_obj.methods[method_name](
-                idx, event_id)
+                selected_idx, selected_event_id)
             fig.canvas.draw()
             # Clear existing plt buffer
             plt.clf()
@@ -199,11 +203,21 @@ class AnalysisResultsWindow(BaseWindow):
 
             pixmap = img_to_pixmap(img, width, height)
             self.label_output.setPixmap(pixmap)
+            self.label_output.repaint()
 
         except Exception as err:
-            import traceback
-            pixmap = img_to_pixmap(asset_imgs.get('error'), width, height)
-            self.label_output.setPixmap(pixmap)
+            # Stop the progressing bar
+            self._progress_bar_going_flag = False
+
+            # Report traceback msg to console
+            msg = traceback.format_exc()
+            print(msg)
+
+            # Draw the error image
+            with contextlib.suppress(Exception):
+                pixmap = img_to_pixmap(asset_imgs.get('error'), width, height)
+                self.label_output.setPixmap(pixmap)
+                self.label_output.repaint()
 
             # ----------------------------------------
             # ---- Popup error box ----
@@ -212,10 +226,10 @@ class AnalysisResultsWindow(BaseWindow):
                 method_name} got error: {err}'
             dialog.setWindowTitle(error_title)
             layout = QtWidgets.QVBoxLayout()
-            message = QtWidgets.QLabel(traceback.format_exc())
+            message = QtWidgets.QLabel(msg)
             layout.addWidget(message)
             dialog.setLayout(layout)
-            dialog.show()
+            dialog.exec()
 
             logger.error(error_title)
 
@@ -242,7 +256,9 @@ class AnalysisResultsWindow(BaseWindow):
             txt = pseudo_progressing_report()
             passed = time.time() - tic
             self.label_progressing.setText(f'{passed:0.2f} | {txt}')
-            self.label_progressing.repaint()
+
+            # The repaint method is dangerous in the thread
+            # >> self.label_progressing.repaint()
 
         self.label_progressing.setText(
             f'Cost {passed:0.2f} seconds | Finished at {datetime.now()}')

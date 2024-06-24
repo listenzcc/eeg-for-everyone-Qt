@@ -56,7 +56,7 @@ class MIDefaultOptions:
 
     # --------------------
     short_name = 'MI'
-    long_name = 'Motion Imaging'
+    long_name = 'MI experiment from Bei Wang'
 
     # --------------------
     channels = ['C3', 'CZ', 'C4']
@@ -82,7 +82,7 @@ class P300DefaultOptions:
 
     # --------------------
     short_name = 'P300'
-    long_name = 'Positive peak at 300ms'
+    long_name = 'P300 experiment from Bei Wang'
 
     # --------------------
     channels = [
@@ -103,6 +103,31 @@ class P300DefaultOptions:
         event_repeated='drop'
     )
 
+
+class SSVEPDefaultOptions:
+    """
+    The default options for MI experiment protocol.
+    ! The attributes are type specific.
+    """
+
+    # --------------------
+    short_name = 'SSVEP'
+    long_name = 'SSVEP experiment from Li Zheng'
+
+    # --------------------
+    channels = ['PO3', 'PO5', 'POz', 'PO4', 'PO6', 'O1', 'Oz', 'O2']
+    eventIds = [f'{e}' for e in range(1, 241)]
+    epochTimes = dict(tmin=-0.5, tmax=0.5)
+    freqBand = dict(freq_l=3.0, freq_h=90.0)
+    reject = dict(eeg=0.4)  # It is very large, and I don't know why
+
+    # --------------------
+    epochsKwargs = dict(
+        baseline=(None, 0),
+        detrend=1,
+        decim=4,
+        event_repeated='drop'
+    )
 
 # %% ---- 2024-06-03 ------------------------
 # Play ground

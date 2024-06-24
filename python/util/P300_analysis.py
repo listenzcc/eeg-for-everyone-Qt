@@ -51,15 +51,16 @@ class P300_Analysis(BaseAnalysis):
     def load_methods(self):
         self.methods['debug'] = self.debug
 
-    def debug(self, idx, event_id):
-        epochs = self.objs[idx].epochs[event_id]
-        epochs = self.objs[idx].epochs
+    def debug(self, selected_idx, selected_event_id):
+        epochs = self.objs[selected_idx].epochs[selected_event_id]
+        epochs = self.objs[selected_idx].epochs
         sfreq = epochs.info['sfreq']
 
         # Data shape is (trials, channels, time-points)
         data = epochs.get_data()
         print(data.shape, sfreq)
 
+        # Choose classification method for 'lda' (faster) or 'blda' (slower)
         method = 'lda'
         # method = 'blda'
 

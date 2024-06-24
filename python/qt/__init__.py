@@ -32,6 +32,7 @@ from util.default import default_options
 
 from util.MI_analysis import MI_Analysis
 from util.P300_analysis import P300_Analysis
+from util.SSVEP_analysis import SSVEP_Analysis
 from util.analysis.base_analysis import BaseAnalysis
 
 

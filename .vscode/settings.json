@@ -7,6 +7,7 @@
     "morlet",
     "omegaconf",
     "sfreq",
+    "SSVEP",
     "tmax",
     "tmin"
   ]

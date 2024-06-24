@@ -89,23 +89,23 @@ class BaseAnalysis(object):
         self.methods['Plot Sensors'] = self._method_plot_sensors
         self.methods['Plot Evoked'] = self._method_plot_evoked
 
-    def _method_plot_events(self, idx, event_id):
-        epochs = self.objs[idx].epochs
+    def _method_plot_events(self, selected_idx, selected_event_id):
+        epochs = self.objs[selected_idx].epochs
         return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], event_id=epochs.event_id, show=False)
 
-    def _method_plot_sensors(self, idx, event_id):
-        epochs = self.objs[idx].epochs[event_id]
+    def _method_plot_sensors(self, selected_idx, selected_event_id):
+        epochs = self.objs[selected_idx].epochs[selected_event_id]
         fig, axes = plt.subplots(1, 1, figsize=(8, 8))
         mne.viz.plot_sensors(
             epochs.info, show_names=True, axes=axes, show=False)
         return fig
 
-    def _method_plot_evoked(self, idx, event_id):
-        epochs = self.objs[idx].epochs[event_id]
+    def _method_plot_evoked(self, selected_idx, selected_event_id):
+        epochs = self.objs[selected_idx].epochs[selected_event_id]
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')
         return evoked.plot_joint(
-            title=f'Evoked: {event_id} | {len(epochs)}',
+            title=f'Evoked: {selected_event_id} | {len(epochs)}',
             show=False,
             exclude=['ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'],
         )

@@ -81,8 +81,8 @@ class MI_Analysis(BaseAnalysis):
     def load_methods(self):
         self.methods['Plot ERD'] = self.method_plot_erd
 
-    def method_plot_erd(self, idx, event_id):
-        epochs = self.objs[idx].epochs[event_id]
+    def method_plot_erd(self, selected_idx, selected_event_id):
+        epochs = self.objs[selected_idx].epochs[selected_event_id]
         sfreq = epochs.info['sfreq']
 
         v_scale = 1e-10
@@ -97,7 +97,7 @@ class MI_Analysis(BaseAnalysis):
             evoked = tfr_epochs.average()
             evoked.plot(vmin=-v_scale, vmax=v_scale, axes=ax, show=False)
             ax.set_title(f'Channel: {sensor_name}')
-        title = f'TFR-morlet-evoked-{event_id}'
+        title = f'TFR-morlet-evoked-{selected_event_id}'
         fig.suptitle(title)
         fig.tight_layout()
 
