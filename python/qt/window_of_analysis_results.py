@@ -30,6 +30,7 @@ from datetime import datetime
 from PIL import Image
 from PIL.ImageQt import ImageQt
 
+from PySide6 import QtCore
 from PySide6 import QtWidgets
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
@@ -73,7 +74,9 @@ class AnalysisResultsWindow(BaseWindow):
     comboBox_selectEventId: QtWidgets.QComboBox = None
     comboBox_selectMethod: QtWidgets.QComboBox = None
     label_progressing: QtWidgets.QLabel = None
+    radioButton_requireDetail: QtWidgets.QRadioButton = None
     buttonBox_submit = None
+    timer = QtCore.QTimer()
 
     # ----------------------------------------
     # ---- Input ----
@@ -91,8 +94,17 @@ class AnalysisResultsWindow(BaseWindow):
         self.buttonBox_submit.accepted.connect(self.handle_accept)
 
         self.handle_accept()
+        # self._timer()
 
         logger.info(f'Initialized with obj: {analysis_obj}')
+
+    def _timer(self):
+        def _timeout():
+            self.label_progressing.repaint()
+
+        self.timer.timeout.connect(_timeout)
+
+        self.timer.start(100)
 
     def on_load(self, analysis_obj):
         # ----------------------------------------
@@ -165,13 +177,13 @@ class AnalysisResultsWindow(BaseWindow):
         with contextlib.suppress(Exception):
             pixmap = img_to_pixmap(asset_imgs.get('computing'), width, height)
             self.label_output.setPixmap(pixmap)
-            self.label_output.repaint()
 
         # ----------------------------------------
         # ---- Check current options ----
         selected_idx = self.comboBox_selectFile.currentIndex()
         selected_event_id = self.comboBox_selectEventId.currentText()
         selected_event_id = selected_event_id.split(':')[0].strip()
+        flag_require_detail = self.radioButton_requireDetail.isChecked()
         method_name = self.comboBox_selectMethod.currentText()
         logger.debug(
             f'Submit for {method_name}, {selected_idx}, {selected_event_id}')
@@ -189,7 +201,9 @@ class AnalysisResultsWindow(BaseWindow):
             Thread(target=self._progress_bar_engage, daemon=True).start()
 
             fig = self.analysis_obj.methods[method_name](
-                selected_idx, selected_event_id)
+                selected_idx,
+                selected_event_id,
+                flag_require_detail=flag_require_detail)
             fig.canvas.draw()
 
             # ----------------------------------------
@@ -204,7 +218,6 @@ class AnalysisResultsWindow(BaseWindow):
 
             pixmap = img_to_pixmap(img, width, height)
             self.label_output.setPixmap(pixmap)
-            self.label_output.repaint()
 
         except Exception as err:
             # Stop the progressing bar
@@ -218,7 +231,6 @@ class AnalysisResultsWindow(BaseWindow):
             with contextlib.suppress(Exception):
                 pixmap = img_to_pixmap(asset_imgs.get('error'), width, height)
                 self.label_output.setPixmap(pixmap)
-                self.label_output.repaint()
 
             # ----------------------------------------
             # ---- Popup error box ----

@@ -24,17 +24,44 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from tqdm.auto import tqdm
+from PySide6 import QtWidgets
+
 from sklearn import metrics
+from sklearn import model_selection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
 from .default.n_jobs import n_jobs
+from .input_dialog import require_options_with_QDialog
 from . import logger
 
 from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
+
+
+def require_LDA_options(other_epochs):
+    if other_epochs:
+        default_options = {
+            'method': 'lda',
+        }
+        logger.debug('Has other epochs')
+    else:
+        default_options = {
+            'method': 'lda',
+            'crossValidation': 5
+        }
+        logger.debug('Does not have other epochs')
+
+    comment = '''
+# The LDA requires the options
+# - method = lda: Using sklearn.discriminant_analysis.LinearDiscriminantAnalysis for LDA discrimination
+# - method = blda: Using Bei Wang's BLDA algorithm
+'''
+
+    return require_options_with_QDialog(default_options, comment)
 
 
 class P300_Analysis(BaseAnalysis):
@@ -49,69 +76,135 @@ class P300_Analysis(BaseAnalysis):
         self.load_methods()
 
     def load_methods(self):
-        self.methods['debug'] = self.debug
+        self.methods['BLDA'] = self.BLDA
 
-    def debug(self, selected_idx, selected_event_id):
-        epochs = self.objs[selected_idx].epochs[selected_event_id]
+    def BLDA(self, selected_idx, selected_event_id, **kwargs):
+        # Select epochs of all the event_id
+        # Pick given channels
         epochs = self.objs[selected_idx].epochs
-        sfreq = epochs.info['sfreq']
+        epochs = epochs.pick([e.upper() for e in self.options['channels']])
 
-        # Data shape is (trials, channels, time-points)
-        data = epochs.get_data()
-        print(data.shape, sfreq)
+        # Collect other epochs
+        other_epochs = [
+            e.epochs.pick([e.upper() for e in self.options['channels']])
+            for i, e in enumerate(self.objs) if i != selected_idx]
+
+        # Get input options
+        inp = require_LDA_options(other_epochs)
 
         # Choose classification method for 'lda' (faster) or 'blda' (slower)
-        method = 'lda'
-        # method = 'blda'
+        method = inp.get('method')
+        cv = int(inp.get('crossValidation', 5))
 
-        if method == 'blda':
-            # ----------------------------------------
-            # ---- Fit and predict with BLDA(Bei Wang) ----
-            blda = BLDA(name='P300')
-
-            # Transpose dim to fit (channels, time_series, stims)
+        def _blda_get_X_y(epochs):
             # Convert the >1 values to 1, 1 value to 0
-            X = data.transpose((1, 2, 0))
             _y = np.array(epochs.events)[:, -1]
             y = _y.copy()
             y[_y > 1] = 1
             y[_y == 1] = 0
-            y = y.reshape((len(y), 1))
+            y = y.reshape((len(y), -1))
+
+            # Data shape is (trials, channels, time-points)
+            X = epochs.get_data(copy=True)
+            return X, y
+
+        def _lda_get_X_y(epochs):
+            # Label y
+            y = np.array(epochs.events)[:, -1]
+            # Data shape is (trials, channels, time-points)
+            X = epochs.get_data(copy=True)
+            X = X.reshape(len(X), -1)
+            return X, y
+
+        if len(other_epochs) > 0 and method.lower() == 'blda':
+            # Clf
+            clf = BLDA(name='P300')
+
+            # Separate data
+            pairs = [_blda_get_X_y(e) for e in other_epochs]
+            train_X = np.concatenate([e[0] for e in pairs], axis=0)
+            train_y = np.concatenate([e[1] for e in pairs], axis=0)
+            X, y = _blda_get_X_y(epochs)
+            logger.debug(
+                f'Data shape: {train_X.shape}, {train_y.shape}, {X.shape}, {y.shape}')
 
             # Train & validation
-            blda.fit(X, y)
-            logger.debug(f'Trained with {X.shape}, {y.shape}')
-            y_prob = blda.predict(X)
+            clf.fit(train_X.transpose((1, 2, 0)), train_y)
+            y_prob = clf.predict(X.transpose((1, 2, 0)))
             y_pred = post_process_y_prob(y_prob)
 
-        elif method == 'lda':
-            # ----------------------------------------
-            # ---- Fit and predict with LDA ----
+        elif len(other_epochs) > 0 and method.lower() == 'lda':
+            # Clf
             clf = LinearDiscriminantAnalysis()
-            X = data.reshape(len(data), -1)
-            y = np.array(epochs.events)[:, -1]
+
+            # Separate data
+            pairs = [_lda_get_X_y(e) for e in other_epochs]
+            train_X = np.concatenate([e[0] for e in pairs], axis=0)
+            train_y = np.concatenate([e[1] for e in pairs], axis=0)
+            X, y = _lda_get_X_y(epochs)
+            logger.debug(
+                f'Data shape: {train_X.shape}, {train_y.shape}, {X.shape}, {y.shape}')
 
             # Train & validation
-            clf.fit(X, y)
-            y_prob = clf.predict_proba(X)[:, -1]
+            clf.fit(train_X, train_y)
+            y_prob = clf.predict_proba(X)
+            y_prob = y_prob[:, -1]
             y_pred = clf.predict(X)
+
+        elif len(other_epochs) == 0 and method.lower() == 'blda':
+            # ----------------------------------------
+            # ---- Fit and predict with BLDA(Bei Wang) ----
+            clf = BLDA(name='P300')
+
+            # Get X, y
+            X, y = _blda_get_X_y(epochs)
+
+            # Train & validation
+            skf = model_selection.StratifiedKFold(n_splits=cv)
+            n = len(y)
+            y_prob = np.zeros((n, 1))
+            for i, (train_index, test_index) in tqdm(enumerate(skf.split(X, y))):
+                # Transpose dim to fit (channels, time_series, trials)
+                clf.fit(X[train_index].transpose((1, 2, 0)), y[train_index])
+                y_prob[test_index] = clf.predict(
+                    X[test_index].transpose((1, 2, 0)))
+            y_pred = post_process_y_prob(y_prob)
+
+        elif len(other_epochs) == 0 and method.lower() == 'lda':
+            # ----------------------------------------
+            # ---- Fit and predict with LDA ----
+            # Train & validation
+            clf = LinearDiscriminantAnalysis()
+
+            # Get X, y
+            X, y = _lda_get_X_y(epochs)
+
+            # Train & validation
+            y_prob = model_selection.cross_val_predict(
+                clf, X, y, cv=cv, n_jobs=n_jobs, method='predict_proba')
+            y_prob = y_prob[:, -1]
+            y_pred = model_selection.cross_val_predict(
+                clf, X, y, cv=cv, n_jobs=n_jobs, method='predict')
 
         # ----------------------------------------
         # ---- Summary result ----
+        report = metrics.classification_report(
+            y_true=y, y_pred=y_pred, output_dict=True)
         c_mat = metrics.confusion_matrix(
             y_true=y, y_pred=y_pred, normalize='true')
         roc_auc_score = metrics.roc_auc_score(y_true=y, y_score=y_prob)
-        print(y_pred.shape)
-        print(c_mat)
-        print(roc_auc_score)
-        logger.debug(f'Predicted with {c_mat}, {roc_auc_score}')
+        logger.debug(f'Prediction result: {report}, {c_mat}, {roc_auc_score}')
 
         # ----------------------------------------
         # ---- Generate result figure ----
+        require_options_with_QDialog(
+            default_options=report,
+            comment='# Classification result')
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        sns.heatmap(c_mat, ax=ax)
-        ax.set_title(f'Roc auc score is {roc_auc_score}')
-        # time.sleep(5)
+        sns.heatmap(c_mat, ax=ax, annot=c_mat)
+        ax.set_xlabel('True label')
+        ax.set_ylabel('Predict label')
+        ax.set_title(f'Roc auc score is {roc_auc_score:0.2f}')
         return fig
 
 

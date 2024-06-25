@@ -34,6 +34,7 @@ from sklearn import metrics
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
+from .input_dialog import require_options_with_QDialog
 from .default.n_jobs import n_jobs
 from . import logger
 
@@ -106,7 +107,7 @@ def mk_filter_bank(sfreq, low_pass_band, high_pass_band):
     return dict(B=B, A=A)
 
 
-def require_frequencies(event_id: dict):
+def require_FBCCA_options(event_id: dict):
     # Default options
     def convert_v_to_freq(v):
         # Convert 1-40 to 8-15.8 Hz
@@ -125,47 +126,11 @@ def require_frequencies(event_id: dict):
         'frequencies': {k: convert_v_to_freq(v) for k, v in event_id.items()},
     }
 
-    # Set text as default_options
-    # It equals to
-    # >> input_buffer = {'text': json.dumps(default_potions)}
-    text = '{\n  ' + ',\n  '.join([
-        f'"{k}": {v}' for k, v in default_options.items()]) + '\n}'
-    text = text.replace('\'', '\"')
-    input_buffer = {'text': text}
+    comment = '''
+# The FBCCA method requires the options:
+'''
 
-    # Make dialog
-    dialog = QtWidgets.QDialog()
-    dialog.setWindowTitle('Require frequencies')
-
-    layout = QtWidgets.QVBoxLayout()
-    text_area = QtWidgets.QTextEdit()
-    layout.addWidget(text_area)
-    dialog.setLayout(layout)
-
-    text_area.setText(input_buffer['text'])
-
-    def on_text_changed():
-        # Handle input changes
-        input_buffer.update(dict(
-            text=text_area.document().toPlainText()
-        ))
-
-    text_area.textChanged.connect(on_text_changed)
-
-    # Display the dialog
-    dialog.exec()
-
-    # Return input options or {} if error occurred
-    try:
-        text = input_buffer['text']
-        text = text.replace(' ', '').replace('\n', '').replace('\t', '')
-        print(text)
-        return json.loads(text)
-    except Exception as error:
-        logger.error(f'{error}')
-        import traceback
-        traceback.print_exc()
-        return {}
+    return require_options_with_QDialog(default_options, comment)
 
 
 class SSVEP_Analysis(BaseAnalysis):
@@ -180,17 +145,18 @@ class SSVEP_Analysis(BaseAnalysis):
         self.load_methods()
 
     def load_methods(self):
-        self.methods['debug'] = self.debug
+        self.methods['FBCCA'] = self.FBCCA
 
-    def debug(self, selected_idx, selected_event_id):
-        # epochs = self.objs[selected_idx].epochs[selected_event_id]
+    def FBCCA(self, selected_idx, selected_event_id, **kwargs):
+        # Select epochs of all the event_id
         epochs = self.objs[selected_idx].epochs
 
+        # Pick given channels
         epochs = epochs.pick([e.upper() for e in self.options['channels']])
 
         # ----------------------------------------
         # ---- User input for frequencies ----
-        inp = require_frequencies(epochs.event_id)
+        inp = require_FBCCA_options(epochs.event_id)
         logger.debug(f'Got input: {inp}')
 
         # ----------------------------------------
@@ -247,45 +213,92 @@ class SSVEP_Analysis(BaseAnalysis):
                 pred_event=pred[0],
                 pred_freq=pred[1],
                 true_event=event[2],
-                true_freq=inp['frequencies'].get(event_id_inv[event[2]])
+                true_freq=inp['frequencies'].get(event_id_inv[event[2]]),
+                event_id=event_id_inv[event[2]]
             )
             result.append(res)
         df = pd.DataFrame(result)
+        df['error'] = df['pred_freq'] - df['true_freq']
 
         # Display the prediction results
         print(df)
 
         # Compute and display frequency response
-        w, h = signal.freqz(pre_notch_filter['b'], pre_notch_filter['a'])
-        w /= np.pi
-        w *= sfreq / 2
-        plt.figure()
-        plt.subplot(2, 1, 1)
-        plt.semilogx(w, 20*np.log10(h))
-        plt.xlabel('Frequency')
-        plt.ylabel('dB')
-        plt.title('Frequency Response (Magnitude)')
-        plt.grid(True)
-        plt.subplot(2, 1, 2)
-        plt.semilogx(w, np.unwrap(np.angle(h)))
-        plt.xlabel('Frequency')
-        plt.ylabel('Phase(rad)')
-        plt.grid(True)
-        plt.show()
-
-        # plt.figure()
-        # plt.plot(w, 20 * np.log10(abs(h)))  # Plot frequency response in dB
-        # plt.semilogx(w, 20*np.log10(h))
-        # plt.title('Butterworth filter frequency response')
-        # plt.xlabel('Frequency [radians / sample]')
-        # plt.ylabel('Amplitude [dB]')
-        # plt.show()
+        if kwargs.get('flag_require_detail', True):
+            logger.debug('Require detail')
+            self._FBCCA_plot_filter(pre_notch_filter, filter_bank, sfreq)
 
         # ----------------------------------------
         # ---- Generate result figure ----
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        sns.scatterplot(df, x='true_freq', y='pred_freq', ax=ax)
+        sns.regplot(df, x='true_freq', y='pred_freq', ax=ax)
+        sns.scatterplot(
+            df, x='true_freq', y='pred_freq', s=100, hue='error', ax=ax)
+        for _, se in df.iterrows():
+            plt.text(
+                se['true_freq'], se['pred_freq'], f'*{se["event_id"]}', horizontalalignment='left')
+
+        # Plot selected_event_id in 'red' color
+        selected_df = df.query(f'event_id=="{selected_event_id}"')
+        sns.scatterplot(
+            selected_df, x='true_freq', y='pred_freq', color='red', s=200, ax=ax)
+        for _, se in selected_df.iterrows():
+            plt.text(
+                se['true_freq'], se['pred_freq'], f'*{selected_event_id} | {se["pred_freq"]} | {se["true_freq"]}', horizontalalignment='left')
+
+        ax.grid(True)
         return fig
+
+    def _FBCCA_plot_filter(self, pre_notch_filter, filter_bank, sfreq):
+        # ----------------------------------------
+        # ---- Notch filter ----
+        w, h = signal.freqz(pre_notch_filter['b'], pre_notch_filter['a'])
+        w /= np.pi
+        w *= sfreq / 2
+        fig, axs = plt.subplots(2, 2, figsize=(8, 4))
+
+        ax = axs[0][0]
+        ax.semilogx(w, 20*np.log10(h))
+        ax.set_xlabel('Frequency')
+        ax.set_ylabel('dB')
+        ax.set_title('Notch Filter Frequency Response (Magnitude)')
+        ax.grid(True)
+
+        ax = axs[1][0]
+        ax.semilogx(w, np.unwrap(np.angle(h)))
+        ax.set_xlabel('Frequency')
+        ax.set_ylabel('Phase(rad)')
+        ax.grid(True)
+
+        # ----------------------------------------
+        # ---- Filter bank filter ----
+        for b, a in zip(filter_bank['B'], filter_bank['A']):
+            w, h = signal.freqz(b, a)
+            w /= np.pi
+            w *= sfreq / 2
+
+            ax = axs[0][1]
+            ax.semilogx(w, 20*np.log10(h))
+
+            ax = axs[1][1]
+            ax.semilogx(w, np.unwrap(np.angle(h)))
+
+        ax = axs[0][1]
+        ax.set_ylim([-100, 10])
+        ax.set_xlabel('Frequency')
+        ax.set_ylabel('dB')
+        ax.set_title('Bank Filter Frequency Response (Magnitude)')
+        ax.grid(True)
+
+        ax = axs[1][1]
+        ax.set_xlabel('Frequency')
+        ax.set_ylabel('Phase(rad)')
+        ax.grid(True)
+
+        fig.tight_layout()
+        plt.show()
+
+        logger.debug('Plotted filter details of FBCCA')
 
 # %% ---- 2024-06-20 ------------------------
 # Play ground

@@ -117,7 +117,7 @@ class SSVEPDefaultOptions:
     # --------------------
     channels = ['PO3', 'PO5', 'POz', 'PO4', 'PO6', 'O1', 'Oz', 'O2']
     eventIds = [f'{e}' for e in range(1, 241)]
-    epochTimes = dict(tmin=-0.5, tmax=0.5)
+    epochTimes = dict(tmin=-0.5, tmax=4.5)
     freqBand = dict(freq_l=3.0, freq_h=90.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 

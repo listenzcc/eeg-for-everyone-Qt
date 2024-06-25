@@ -151,7 +151,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Select result:</string>
+           <string>Select method:</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -160,6 +160,13 @@
         </item>
         <item>
          <widget class="QComboBox" name="zcc_comboBox_selectMethod"/>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="zcc_radioButton_requireDetail">
+          <property name="text">
+           <string>Require Detail</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
