@@ -191,8 +191,6 @@ class AnalysisResultsWindow(BaseWindow):
             fig = self.analysis_obj.methods[method_name](
                 selected_idx, selected_event_id)
             fig.canvas.draw()
-            # Clear existing plt buffer
-            plt.clf()
 
             # ----------------------------------------
             # ---- Fit image to output frame ----
@@ -200,6 +198,9 @@ class AnalysisResultsWindow(BaseWindow):
                 'RGB',
                 fig.canvas.get_width_height(),
                 fig.canvas.tostring_rgb())  # .resize((width, height))
+
+            # Clear existing plt buffer
+            plt.close(fig)
 
             pixmap = img_to_pixmap(img, width, height)
             self.label_output.setPixmap(pixmap)

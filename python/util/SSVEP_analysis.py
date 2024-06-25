@@ -252,7 +252,34 @@ class SSVEP_Analysis(BaseAnalysis):
             result.append(res)
         df = pd.DataFrame(result)
 
+        # Display the prediction results
         print(df)
+
+        # Compute and display frequency response
+        w, h = signal.freqz(pre_notch_filter['b'], pre_notch_filter['a'])
+        w /= np.pi
+        w *= sfreq / 2
+        plt.figure()
+        plt.subplot(2, 1, 1)
+        plt.semilogx(w, 20*np.log10(h))
+        plt.xlabel('Frequency')
+        plt.ylabel('dB')
+        plt.title('Frequency Response (Magnitude)')
+        plt.grid(True)
+        plt.subplot(2, 1, 2)
+        plt.semilogx(w, np.unwrap(np.angle(h)))
+        plt.xlabel('Frequency')
+        plt.ylabel('Phase(rad)')
+        plt.grid(True)
+        plt.show()
+
+        # plt.figure()
+        # plt.plot(w, 20 * np.log10(abs(h)))  # Plot frequency response in dB
+        # plt.semilogx(w, 20*np.log10(h))
+        # plt.title('Butterworth filter frequency response')
+        # plt.xlabel('Frequency [radians / sample]')
+        # plt.ylabel('Amplitude [dB]')
+        # plt.show()
 
         # ----------------------------------------
         # ---- Generate result figure ----
