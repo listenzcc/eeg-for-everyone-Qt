@@ -19,6 +19,8 @@ Functions:
 # %% ---- 2024-06-25 ------------------------
 # Requirements and constants
 import json
+
+from threading import Thread
 from PySide6 import QtWidgets
 
 from . import logger
@@ -43,8 +45,14 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
 
     layout = QtWidgets.QVBoxLayout()
     text_area = QtWidgets.QTextEdit()
+    button_box = QtWidgets.QDialogButtonBox()
+    ok_button = QtWidgets.QDialogButtonBox.StandardButton.Ok
+    button_box.addButton(ok_button)
     layout.addWidget(text_area)
+    layout.addWidget(button_box)
     dialog.setLayout(layout)
+
+    button_box.accepted.connect(dialog.accept)
 
     text_area.setText(input_buffer['text'])
 
@@ -71,6 +79,13 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
         import traceback
         traceback.print_exc()
         return {}
+
+
+def require_options_with_QDialog_thread(default_options, comment):
+    Thread(
+        target=require_options_with_QDialog,
+        args=(default_options, comment),
+        daemon=True).start()
 
 # %% ---- 2024-06-25 ------------------------
 # Play ground

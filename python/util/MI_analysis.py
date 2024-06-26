@@ -22,7 +22,11 @@ import mne
 import numpy as np
 import matplotlib.pyplot as plt
 
-from . import logger
+
+from dash import dcc
+import plotly.express as px
+
+from . import logger, dash_app
 from .analysis.base_analysis import BaseAnalysis
 from .default.n_jobs import n_jobs
 
@@ -96,7 +100,17 @@ class MI_Analysis(BaseAnalysis):
                 epochs.copy().pick([sensor_name]), h_freq=h_freq)
             evoked = tfr_epochs.average()
             evoked.plot(vmin=-v_scale, vmax=v_scale, axes=ax, show=False)
-            ax.set_title(f'Channel: {sensor_name}')
+            title = f'Channel: {sensor_name}'
+            ax.set_title(title)
+
+            # Update dash_app
+            _fig = px.imshow(
+                evoked.data.squeeze(),
+                y=freqs, origin='lower', x=epochs.times,
+                aspect='auto',
+                title=title, template="seaborn")
+            dash_app.div.children.append(dcc.Graph(figure=_fig))
+
         title = f'TFR-morlet-evoked-{selected_event_id}'
         fig.suptitle(title)
         fig.tight_layout()

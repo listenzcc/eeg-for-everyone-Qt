@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 from PySide6 import QtWidgets
 
+from dash import dash_table
 from scipy import signal
 from sklearn import metrics
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
@@ -36,7 +37,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from .analysis.base_analysis import BaseAnalysis
 from .input_dialog import require_options_with_QDialog
 from .default.n_jobs import n_jobs
-from . import logger
+from . import logger, dash_app
 
 from .algorithm.FBCCA_code.FBCCA import FBCCA
 from .algorithm.FBCCA_code.CCA import CCA
@@ -237,6 +238,20 @@ class SSVEP_Analysis(BaseAnalysis):
         for _, se in df.iterrows():
             plt.text(
                 se['true_freq'], se['pred_freq'], f'*{se["event_id"]}', horizontalalignment='left')
+
+        # ----------------------------------------
+        # ---- Update dash_app children ----
+        _df = df.copy()
+        for col in _df.columns:
+            _df[col] = _df[col].map(str)
+
+        dash_app.div.children.append(dash_table.DataTable(
+            _df.to_dict("records"),
+            [{"name": i, "id": i} for i in df.columns],
+            filter_action="native",
+            filter_options={"placeholder_text": "Filter column..."},
+            page_size=10,
+        ))
 
         # Plot selected_event_id in 'red' color
         selected_df = df.query(f'event_id=="{selected_event_id}"')

@@ -26,7 +26,7 @@ from pathlib import Path
 p = Path(__file__).parent.parent  # noqa
 sys.path.append(p.as_posix())  # noqa
 
-from util import logger, project_root, cache_path, asset_path
+from util import logger, dash_app, project_root, cache_path, asset_path
 
 from util.default import default_options
 

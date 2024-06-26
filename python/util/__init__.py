@@ -19,8 +19,9 @@ Functions:
 # %% ---- 2024-04-23 ------------------------
 # Requirements and constants
 from loguru import logger
-from pathlib import Path
 
+from pathlib import Path
+from .plotly_dash.thread_app import DashApp, html
 
 # %% ---- 2024-04-23 ------------------------
 # Function and class
@@ -33,6 +34,7 @@ logger_path = project_root.joinpath(f'log/{project_name}.log')
 cache_path = project_root.joinpath('cache')
 asset_path = project_root.joinpath('asset')
 
+dash_app = DashApp()
 
 # %% ---- 2024-04-23 ------------------------
 # Play ground

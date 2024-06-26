@@ -18,14 +18,17 @@ Functions:
 
 # %% ---- 2024-06-17 ------------------------
 # Requirements and constants
+import json
 import mne
 import time
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from tqdm.auto import tqdm
+from dash import dash_table
 from PySide6 import QtWidgets
+from tqdm.auto import tqdm
 
 from sklearn import metrics
 from sklearn import model_selection
@@ -33,8 +36,8 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
 from .default.n_jobs import n_jobs
-from .input_dialog import require_options_with_QDialog
-from . import logger
+from .input_dialog import require_options_with_QDialog, require_options_with_QDialog_thread
+from . import logger, dash_app
 
 from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 
@@ -197,9 +200,25 @@ class P300_Analysis(BaseAnalysis):
 
         # ----------------------------------------
         # ---- Generate result figure ----
-        require_options_with_QDialog(
-            default_options=report,
-            comment='# Classification result')
+        # require_options_with_QDialog_thread(
+        #     default_options=report,
+        #     comment='# Classification result')
+
+        df = pd.read_json(json.dumps(report))
+        columns = df.columns
+        df['measurement'] = df.index
+        columns = columns.insert(0, 'measurement')
+        df = df[columns]
+        print(df)
+
+        dash_app.div.children.append(dash_table.DataTable(
+            df.to_dict("records"),
+            [{"name": i, "id": i} for i in df.columns],
+            filter_action="native",
+            filter_options={"placeholder_text": "Filter column..."},
+            page_size=10,
+        ))
+
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
         sns.heatmap(c_mat, ax=ax, annot=c_mat)
         ax.set_xlabel('True label')

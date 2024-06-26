@@ -20,14 +20,42 @@ Functions:
 # Requirements and constants
 import mne
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-from .. import logger
+from dash import dash_table, dcc
+import plotly.express as px
+
+from .. import logger, dash_app
 from ..load_data.load_epochs import EpochsObject
 
 
 # %% ---- 2024-06-14 ------------------------
 # Function and class
+def convert_info_to_table(info):
+    df = pd.DataFrame(
+        [(k, f'{info[k]}') for k in info],
+        columns=['key', 'value']
+    )
+    df['idx'] = df.index
+    df = df[['idx', 'key', 'value']]
+
+    return dash_table.DataTable(
+        df.to_dict("records"),
+        [{"name": i, "id": i} for i in df.columns],
+        filter_action="native",
+        filter_options={"placeholder_text": "Filter column..."},
+        # Auto wrap lines
+        style_data={
+            'whiteSpace': 'normal',
+            'height': 'auto',
+        },
+        # left align text in columns for readability
+        style_cell={'textAlign': 'left'},
+        page_size=20,
+    )
+
+
 class BaseAnalysis(object):
     standard_montage_name = 'standard_1020'
     protocol = 'Any'
@@ -91,10 +119,14 @@ class BaseAnalysis(object):
 
     def _method_plot_events(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs
+        dash_app.div.children.append(convert_info_to_table(epochs.info))
+
         return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], event_id=epochs.event_id, show=False)
 
     def _method_plot_sensors(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
+        dash_app.div.children.append(convert_info_to_table(epochs.info))
+
         fig, axes = plt.subplots(1, 1, figsize=(8, 8))
         mne.viz.plot_sensors(
             epochs.info, show_names=True, axes=axes, show=False)
@@ -102,6 +134,20 @@ class BaseAnalysis(object):
 
     def _method_plot_evoked(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
+        # dash_app.div.children.append(convert_info_to_table(epochs.info))
+
+        dash_app.div.children.append('Epochs detail')
+        for ch_name in self.options['channels']:
+            data = epochs.copy().pick([ch_name.upper()]).get_data(copy=False)
+            # Squeeze data shape into (trials x times)
+            data = data.squeeze()
+            kwargs = dict(title=f'{ch_name}')
+            if len(data.shape) == 1:
+                fig = px.line(y=data, x=epochs.times, **kwargs)
+            else:
+                fig = px.imshow(data, x=epochs.times, aspect='auto', **kwargs)
+            dash_app.div.children.append(dcc.Graph(figure=fig))
+
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')
         return evoked.plot_joint(

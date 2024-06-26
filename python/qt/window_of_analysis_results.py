@@ -36,7 +36,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 
 from .base.base_window import BaseWindow
-from . import logger, project_root, cache_path, asset_path
+from . import logger, dash_app, project_root, cache_path, asset_path
 
 
 # ----------------------------------------
@@ -196,6 +196,10 @@ class AnalysisResultsWindow(BaseWindow):
         # ---- Compute with necessary options: idx and event_id ----
 
         self._toggle_input_components(False)
+
+        # Clear the dash_app's children part
+        dash_app.div.children = []
+
         try:
             # Start progressing bar updating
             Thread(target=self._progress_bar_engage, daemon=True).start()
@@ -245,6 +249,9 @@ class AnalysisResultsWindow(BaseWindow):
             dialog.exec()
 
             logger.error(error_title)
+
+            dash_app.div.children.append(error_title)
+            dash_app.div.children.append(msg)
 
         finally:
             # Release locking input components and finish the progress bar updating
