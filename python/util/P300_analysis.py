@@ -119,7 +119,7 @@ class P300_Analysis(BaseAnalysis):
             X = X.reshape(len(X), -1)
             return X, y
 
-        if len(other_epochs) > 0 and method.lower() == 'blda':
+        if other_epochs and method.lower() == 'blda':
             # Clf
             clf = BLDA(name='P300')
 
@@ -136,7 +136,7 @@ class P300_Analysis(BaseAnalysis):
             y_prob = clf.predict(X.transpose((1, 2, 0)))
             y_pred = post_process_y_prob(y_prob)
 
-        elif len(other_epochs) > 0 and method.lower() == 'lda':
+        elif other_epochs and method.lower() == 'lda':
             # Clf
             clf = LinearDiscriminantAnalysis()
 
@@ -154,7 +154,7 @@ class P300_Analysis(BaseAnalysis):
             y_prob = y_prob[:, -1]
             y_pred = clf.predict(X)
 
-        elif len(other_epochs) == 0 and method.lower() == 'blda':
+        elif not other_epochs and method.lower() == 'blda':
             # ----------------------------------------
             # ---- Fit and predict with BLDA(Bei Wang) ----
             clf = BLDA(name='P300')
@@ -173,7 +173,7 @@ class P300_Analysis(BaseAnalysis):
                     X[test_index].transpose((1, 2, 0)))
             y_pred = post_process_y_prob(y_prob)
 
-        elif len(other_epochs) == 0 and method.lower() == 'lda':
+        elif not other_epochs and method.lower() == 'lda':
             # ----------------------------------------
             # ---- Fit and predict with LDA ----
             # Train & validation
@@ -188,6 +188,11 @@ class P300_Analysis(BaseAnalysis):
             y_prob = y_prob[:, -1]
             y_pred = model_selection.cross_val_predict(
                 clf, X, y, cv=cv, n_jobs=n_jobs, method='predict')
+
+        else:
+            msg = f'Unknown method: {method}, or other things are incorrect.'
+            logger.error(msg)
+            assert False, msg
 
         # ----------------------------------------
         # ---- Summary result ----
