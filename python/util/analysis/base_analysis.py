@@ -21,10 +21,11 @@ Functions:
 import mne
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import matplotlib.pyplot as plt
 
+from scipy.io import savemat
 from dash import dash_table, dcc
-import plotly.express as px
 
 from .. import logger, dash_app
 from ..load_data.load_epochs import EpochsObject
@@ -134,7 +135,6 @@ class BaseAnalysis(object):
 
     def _method_plot_evoked(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
-        # dash_app.div.children.append(convert_info_to_table(epochs.info))
 
         dash_app.div.children.append('Epochs detail')
         for ch_name in self.options['channels']:
@@ -148,6 +148,8 @@ class BaseAnalysis(object):
                 fig = px.imshow(data, x=epochs.times, aspect='auto', **kwargs)
             dash_app.div.children.append(dcc.Graph(figure=fig))
 
+        dash_app.div.children.append(convert_info_to_table(epochs.info))
+
         evoked: mne.Evoked = epochs.average()
         logger.debug(f'Got evoked: {evoked}')
         return evoked.plot_joint(
@@ -156,14 +158,29 @@ class BaseAnalysis(object):
             exclude=['ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'],
         )
 
+    def _save_data(self, selected_idx, selected_event_id, path):
+        epochs = self.objs[selected_idx].epochs[selected_event_id]
+        data = epochs.get_data()
+        times = epochs.times
+        ch_names = epochs.ch_names
+        package = dict(
+            data=data,
+            times=times,
+            ch_names=ch_names
+        )
+        try:
+            savemat(path, mdict=package, appendmat=True)
+            logger.debug(f'Saved epochs {epochs} to path: {path}')
+        except Exception as err:
+            logger.error(f'Error saving {path}, {err}')
+            import traceback
+            traceback.print_exc()
 
 # %% ---- 2024-06-14 ------------------------
 # Play ground
 
-
 # %% ---- 2024-06-14 ------------------------
 # Pending
-
 
 # %% ---- 2024-06-14 ------------------------
 # Pending

@@ -24,6 +24,7 @@ import traceback
 import contextlib
 import matplotlib.pyplot as plt
 
+from pathlib import Path
 from threading import Thread
 from datetime import datetime
 
@@ -75,6 +76,7 @@ class AnalysisResultsWindow(BaseWindow):
     comboBox_selectMethod: QtWidgets.QComboBox = None
     label_progressing: QtWidgets.QLabel = None
     radioButton_requireDetail: QtWidgets.QRadioButton = None
+    pushButton_fetchData: QtWidgets.QPushButton = None
     buttonBox_submit = None
     timer = QtCore.QTimer()
 
@@ -106,6 +108,34 @@ class AnalysisResultsWindow(BaseWindow):
 
         self.timer.start(100)
 
+    def _get_selected_options(self):
+        '''
+        Get the options from the user operating the UI
+
+        - selected_file_idx: The selected file idx;
+        - selected_event_id: The event id.
+        '''
+        selected_file_idx = self.comboBox_selectFile.currentIndex()
+        selected_event_id = self.comboBox_selectEventId.currentText()
+        selected_event_id = selected_event_id.split(':')[0].strip()
+        return selected_file_idx, selected_event_id
+
+    def handle_pushButton_fetchData(self):
+        def _handle():
+            fileName = QtWidgets.QFileDialog.getSaveFileName(
+                caption='File name to save', filter='Matlab Compatible Files (*.mat)')
+
+            if len(fileName[0]) == 0:
+                # Not selecting any file
+                return
+
+            path = Path(fileName[0])
+            selected_file_idx, selected_event_id = self._get_selected_options()
+            self.analysis_obj._save_data(
+                selected_file_idx, selected_event_id, path=path)
+
+        self.pushButton_fetchData.clicked.connect(_handle)
+
     def on_load(self, analysis_obj):
         # ----------------------------------------
         # ---- Load analysis object ----
@@ -121,6 +151,8 @@ class AnalysisResultsWindow(BaseWindow):
             lambda e: self.on_select_file())
 
         self.on_select_file()
+
+        self.handle_pushButton_fetchData()
 
         return analysis_obj
 
@@ -180,13 +212,11 @@ class AnalysisResultsWindow(BaseWindow):
 
         # ----------------------------------------
         # ---- Check current options ----
-        selected_idx = self.comboBox_selectFile.currentIndex()
-        selected_event_id = self.comboBox_selectEventId.currentText()
-        selected_event_id = selected_event_id.split(':')[0].strip()
+        selected_file_idx, selected_event_id = self._get_selected_options()
         flag_require_detail = self.radioButton_requireDetail.isChecked()
         method_name = self.comboBox_selectMethod.currentText()
         logger.debug(
-            f'Submit for {method_name}, {selected_idx}, {selected_event_id}')
+            f'Submit for {method_name}, {selected_file_idx}, {selected_event_id}')
 
         if not len(selected_event_id):
             logger.warning(f'Invalid event_id: {selected_event_id}')
@@ -205,7 +235,7 @@ class AnalysisResultsWindow(BaseWindow):
             Thread(target=self._progress_bar_engage, daemon=True).start()
 
             fig = self.analysis_obj.methods[method_name](
-                selected_idx,
+                selected_file_idx,
                 selected_event_id,
                 flag_require_detail=flag_require_detail)
             fig.canvas.draw()
