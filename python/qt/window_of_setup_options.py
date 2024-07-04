@@ -40,6 +40,7 @@ layout_path = project_root.joinpath('layout/setup_options.ui')
 # %% ---- 2024-04-29 ------------------------
 # Function and class
 
+# Load preprocessing options for each experiment
 default_options_candidates = {
     'MI': default_options.MIDefaultOptions,
     'P300(3X3)': default_options.P300DefaultOptions,
@@ -48,6 +49,7 @@ default_options_candidates = {
     'default': default_options.AnyDefaultOptions
 }
 
+# Load analysis object for each experiment
 analysis_candidates = {
     'MI': MI_Analysis,
     'P300(3X3)': P300_Analysis,
