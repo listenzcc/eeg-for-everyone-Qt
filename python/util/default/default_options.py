@@ -100,7 +100,7 @@ class P300DefaultOptions:
         baseline=(None, 0),
         detrend=1,
         decim=10,
-        event_repeated='drop'
+        event_repeated='drop',
     )
 
 
@@ -126,7 +126,7 @@ class SSVEPDefaultOptions:
         baseline=(None, 0),
         detrend=1,
         decim=4,
-        event_repeated='drop'
+        event_repeated='drop',
     )
 
 # %% ---- 2024-06-03 ------------------------
