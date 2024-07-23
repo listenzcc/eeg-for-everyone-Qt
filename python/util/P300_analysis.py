@@ -18,16 +18,14 @@ Functions:
 
 # %% ---- 2024-06-17 ------------------------
 # Requirements and constants
+from io import StringIO
 import json
-import mne
-import time
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 from dash import dash_table
-from PySide6 import QtWidgets
 from tqdm.auto import tqdm
 
 from sklearn import metrics
@@ -119,6 +117,11 @@ class P300_Analysis(BaseAnalysis):
             X = X.reshape(len(X), -1)
             return X, y
 
+        # ----------------------------------------
+        # ---- Train and test based on whether other_epochs are provided or not ----
+        # If there are other_epochs, train on the other_epochs and test on the epochs
+        # If there is not other_epochs, train and test on n_splits=cv folders validation
+
         if other_epochs and method.lower() == 'blda':
             # Clf
             clf = BLDA(name='P300')
@@ -209,7 +212,8 @@ class P300_Analysis(BaseAnalysis):
         #     default_options=report,
         #     comment='# Classification result')
 
-        df = pd.read_json(json.dumps(report))
+        si = StringIO(json.dumps(report))
+        df = pd.read_json(si)
         columns = df.columns
         df['measurement'] = df.index
         columns = columns.insert(0, 'measurement')

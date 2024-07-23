@@ -307,8 +307,8 @@ class AnalysisResultsWindow(BaseWindow):
             passed = time.time() - tic
             self.label_progressing.setText(f'{passed:0.2f} | {txt}')
 
-            # The repaint method is dangerous in the thread
-            # >> self.label_progressing.repaint()
+            # ! The repaint method is dangerous in the thread
+            self.label_progressing.repaint()
 
         self.label_progressing.setText(
             f'Cost {passed:0.2f} seconds | Finished at {datetime.now()}')
