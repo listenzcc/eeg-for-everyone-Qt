@@ -308,6 +308,7 @@ class AnalysisResultsWindow(BaseWindow):
             self.label_progressing.setText(f'{passed:0.2f} | {txt}')
 
             # ! The repaint method is dangerous in the thread
+            # ! But it keeps updating during the backend computing
             self.label_progressing.repaint()
 
         self.label_progressing.setText(
@@ -317,6 +318,7 @@ class AnalysisResultsWindow(BaseWindow):
 def pseudo_progressing_report():
     chars = 'abcdefghijklmnopqrstuvwxyz           '
     k = random.randint(10, 30)
+    return f'Computing ...'
     return ''.join(random.choices(chars, k=k))
 
 
