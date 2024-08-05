@@ -142,10 +142,16 @@ class BaseAnalysis(object):
             # Squeeze data shape into (trials x times)
             data = data.squeeze()
             kwargs = dict(title=f'{ch_name}')
+
+            # Draw the epochs in matrix format
             if len(data.shape) == 1:
                 fig = px.line(y=data, x=epochs.times, **kwargs)
             else:
                 fig = px.imshow(data, x=epochs.times, aspect='auto', **kwargs)
+            dash_app.div.children.append(dcc.Graph(figure=fig))
+
+            # Draw the epochs in evoked mean time-series
+            fig = px.line(y=np.mean(data, axis=0), x=epochs.times, **kwargs)
             dash_app.div.children.append(dcc.Graph(figure=fig))
 
         dash_app.div.children.append(convert_info_to_table(epochs.info))
