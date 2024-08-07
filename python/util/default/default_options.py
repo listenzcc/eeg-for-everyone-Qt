@@ -85,13 +85,17 @@ class P300DefaultOptions:
     long_name = 'P300 experiment from Bei Wang'
 
     # --------------------
-    channels = [
-        'Fz', 'F3', 'F4',
-        'Cz', 'C3', 'C4', 'CP1', 'CP2', 'CP5', 'CP6',
-        'Pz', 'P3', 'P4', 'P7', 'P8', 'POz', 'PO3', 'PO4', 'PO7', 'PO8',
-        'Oz', 'O1', 'O2']
+    channels = ['Fpz', 'Fp1', 'Fp2',
+                'AF3', 'AF4', 'AF7', 'AF8',
+                'Fz', 'F3', 'F4', 'F7', 'F8',
+                'FCz', 'FC3', 'FC4', 'FT7', 'FT8',
+                'Cz', 'C3', 'C4', 'T7', 'T8',
+                'CP3', 'CP4', 'TP7', 'TP8',
+                'Pz', 'P3', 'P4', 'P7', 'P8',
+                'POz', 'PO3', 'PO4', 'PO7', 'PO8',
+                'Oz', 'O1', 'O2']
     eventIds = [f'{e}' for e in range(1, 100)]
-    epochTimes = dict(tmin=-0.5, tmax=1.0)
+    epochTimes = dict(tmin=-0.5, tmax=1.5)
     freqBand = dict(freq_l=1.0, freq_h=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 

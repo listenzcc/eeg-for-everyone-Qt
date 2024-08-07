@@ -309,7 +309,7 @@ class AnalysisResultsWindow(BaseWindow):
 
             # ! The repaint method is dangerous in the thread
             # ! But it keeps updating during the backend computing
-            self.label_progressing.repaint()
+            # self.label_progressing.repaint()
 
         self.label_progressing.setText(
             f'Cost {passed:0.2f} seconds | Finished at {datetime.now()}')
