@@ -136,6 +136,8 @@ class BaseProtocolWindow(BaseWindow):
 
         # --------------------
         # 2. Handle option changes in the protocol window
+
+        # Initialize the class of the default options
         default_options = self.ClassOfDefaultOptions()
 
         def option_changed():
@@ -150,15 +152,21 @@ class BaseProtocolWindow(BaseWindow):
                 _type_name = str(_type).split('\'')[1]
                 _text = v.toPlainText()
 
-                option = None
+                # Convert the _text into _type_name class.
+                # If failed, the option is set to None.
+                # If failed, raise warning and color the text.
                 try:
+                    # Convert the class of the _text variable
                     cmd = f'{_type_name}({_text})'
                     option = eval(cmd)
                 except Exception:
                     logger.warning(f'Failed convert to {_type}: {_text}')
-                self.options[k] = option
+                    option = None
+                finally:
+                    self.options[k] = option
 
-                # Color the text with red color
+                # red: incorrect option.
+                # black: correct option.
                 if option is None:
                     v.setStyleSheet('color:red;')
                 else:

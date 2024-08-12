@@ -93,14 +93,38 @@ class EpochsObject(RawObject):
 
         # ----------------------------------------
         # ---- Make kwargs ----
-        kwargs = dict(picks=['eeg'])
+        # Picks
+        if channels := options.get('channels'):
+            kwargs = dict(picks=[e.upper() for e in channels])
+        else:
+            kwargs = dict(picks=['eeg'])
+        # epochTimes: tmin, tmax, ...
         kwargs |= options.get('epochTimes', {})
+        # epochsKwargs: baseline, detrend, decim, event_repeated, ...
         kwargs |= options.get('epochsKwargs', {})
 
         if reject := options.get('reject'):
             kwargs |= dict(reject=reject)
 
         logger.debug(f'Getting epochs with kwargs: {kwargs}')
+
+        # ----------------------------------------
+        # ---- Reset reference ----
+        self.raw.load_data()
+        if ref_channels := options.get('otherOptions', {}).get('ref_channels'):
+            ref_channels = [e.upper() for e in ref_channels]
+            self.raw.set_eeg_reference(ref_channels=ref_channels)
+            logger.debug(f'Changed reference channels to {ref_channels}')
+        else:
+            logger.warning(
+                'Ignore reset channels, since not set ref_channels option.')
+
+        # ----------------------------------------
+        # ---- Filter ----
+        filter_kwargs = options.get('freqBand')
+        filter_kwargs |= dict(picks=kwargs['picks'])
+        filter_kwargs |= dict(n_jobs=16)
+        self.raw.filter(**filter_kwargs)
 
         # ----------------------------------------
         # ---- Fetch epochs ----

@@ -22,6 +22,8 @@ Functions:
 
 # %% ---- 2024-06-03 ------------------------
 # Function and class
+
+
 class AnyDefaultOptions:
     """
     The default options for MI experiment protocol.
@@ -36,7 +38,7 @@ class AnyDefaultOptions:
     channels = ['C3', 'CZ', 'C4']
     eventIds = ['all']
     epochTimes = dict(tmin=-1.0, tmax=5.0)
-    freqBand = dict(freq_l=1.0, freq_h=25.0)
+    freqBand = dict(l_freq=1.0, h_freq=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 
     # --------------------
@@ -44,7 +46,12 @@ class AnyDefaultOptions:
         baseline=(None, 0),
         detrend=1,
         decim=10,
-        event_repeated='drop'
+        event_repeated='drop',
+    )
+
+    # --------------------
+    otherOptions = dict(
+        ref_channels=[],
     )
 
 
@@ -62,7 +69,7 @@ class MIDefaultOptions:
     channels = ['C3', 'CZ', 'C4']
     eventIds = ['240', '241', '242']
     epochTimes = dict(tmin=-1.0, tmax=5.0)
-    freqBand = dict(freq_l=1.0, freq_h=25.0)
+    freqBand = dict(l_freq=1.0, h_freq=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 
     # --------------------
@@ -71,6 +78,11 @@ class MIDefaultOptions:
         detrend=1,
         decim=10,
         event_repeated='drop'
+    )
+
+    # --------------------
+    otherOptions = dict(
+        ref_channels=[],
     )
 
 
@@ -96,7 +108,7 @@ class P300DefaultOptions:
                 'Oz', 'O1', 'O2']
     eventIds = [f'{e}' for e in range(1, 100)]
     epochTimes = dict(tmin=-0.5, tmax=1.5)
-    freqBand = dict(freq_l=1.0, freq_h=25.0)
+    freqBand = dict(l_freq=1.0, h_freq=25.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 
     # --------------------
@@ -105,6 +117,11 @@ class P300DefaultOptions:
         detrend=1,
         decim=10,
         event_repeated='drop',
+    )
+
+    # --------------------
+    otherOptions = dict(
+        ref_channels=[],
     )
 
 
@@ -122,7 +139,7 @@ class SSVEPDefaultOptions:
     channels = ['PO3', 'PO5', 'POz', 'PO4', 'PO6', 'O1', 'Oz', 'O2']
     eventIds = [f'{e}' for e in range(1, 241)]
     epochTimes = dict(tmin=-0.5, tmax=4.5)
-    freqBand = dict(freq_l=3.0, freq_h=90.0)
+    freqBand = dict(l_freq=3.0, h_freq=90.0)
     reject = dict(eeg=0.4)  # It is very large, and I don't know why
 
     # --------------------
@@ -131,6 +148,11 @@ class SSVEPDefaultOptions:
         detrend=1,
         decim=4,
         event_repeated='drop',
+    )
+
+    # --------------------
+    otherOptions = dict(
+        ref_channels=[],
     )
 
 # %% ---- 2024-06-03 ------------------------

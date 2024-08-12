@@ -69,6 +69,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
     plainTextEdit_channels = None
     plainTextEdit_reject = None
     plainTextEdit_epochsKwargs = None
+    plainTextEdit_otherOptions = None
     progressBar: QtWidgets.QProgressBar = None
     buttonBox_goToNext: QtWidgets.QDialogButtonBox = None
     textBrowser_tracebackMessage: QtWidgets.QListWidget = None
@@ -79,6 +80,8 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
     def __init__(self, files: list, protocol: str, parent=None):
         # Initialize BaseProtocolWindow
+
+        # Bind the option class
         class_of_default_options = default_options_candidates.get(
             protocol, default_options_candidates['default'])
 
@@ -107,8 +110,11 @@ class SetupOptionsWindow(BaseProtocolWindow):
         Bind the options with their names
         It assign the textEdits for every options.
 
-        ! Its keys should be exactly the same as the attrs of the MIDefaultOptions.
+        ! Its keys are exactly the same as the attrs of the defaultOptions.
         """
+
+        # It is the table of the options and keys.
+        # If the right side is changed, the left side will be changed accordingly.
         self.option_plainTextEdits = dict(
             eventIds=self.plainTextEdit_eventIds,
             epochTimes=self.plainTextEdit_epochTimes,
@@ -116,6 +122,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
             channels=self.plainTextEdit_channels,
             reject=self.plainTextEdit_reject,
             epochsKwargs=self.plainTextEdit_epochsKwargs,
+            otherOptions=self.plainTextEdit_otherOptions
         )
         logger.debug(
             f'Set option plainTextEdits: {self.option_plainTextEdits}')

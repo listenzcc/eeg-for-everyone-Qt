@@ -69,7 +69,7 @@
             <item>
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="currentIndex">
-               <number>3</number>
+               <number>6</number>
               </property>
               <widget class="QWidget" name="tab">
                <attribute name="title">
@@ -157,6 +157,21 @@
                 <string>Epochs kwargs</string>
                </attribute>
                <widget class="QPlainTextEdit" name="zcc_plainTextEdit_epochsKwargs">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>421</width>
+                  <height>201</height>
+                 </rect>
+                </property>
+               </widget>
+              </widget>
+              <widget class="QWidget" name="tab_7">
+               <attribute name="title">
+                <string>Other options</string>
+               </attribute>
+               <widget class="QPlainTextEdit" name="zcc_plainTextEdit_otherOptions">
                 <property name="geometry">
                  <rect>
                   <x>0</x>
