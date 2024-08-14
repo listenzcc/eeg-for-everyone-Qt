@@ -149,6 +149,15 @@ class SSVEP_Analysis(BaseAnalysis):
         self.methods['FBCCA'] = self.FBCCA
 
     def FBCCA(self, selected_idx, selected_event_id, **kwargs):
+        '''
+        The FBCCA classification method for SSVEP dataset.
+        The method is a no-train method.
+
+        Args:
+            - selected_idx (int): The selected file index.
+            - selected_event_id (int): The selected event id.
+            - **kwargs: The kwargs placeholder for compatibility with other methods. (It is not used in this method).
+        '''
         # Select epochs of all the event_id
         epochs = self.objs[selected_idx].epochs
 

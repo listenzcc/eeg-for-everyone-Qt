@@ -136,23 +136,29 @@ class BaseAnalysis(object):
     def _method_plot_evoked(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
 
+        # Plot into the dashboard
         dash_app.div.children.append('Epochs detail')
         for ch_name in self.options['channels']:
             data = epochs.copy().pick([ch_name.upper()]).get_data(copy=False)
             # Squeeze data shape into (trials x times)
             data = data.squeeze()
-            kwargs = dict(title=f'{ch_name}')
 
-            # Draw the epochs in matrix format
+            # Plot the epochs detail in evoked mean time-series
+            # If the data is one-dimensional matrix, plot the time series.
+            # If the data is two-dimensional matrix, plot the matrix and plot the mean time series on the first dimension.
+            kwargs = dict(title=f'{ch_name}', x=epochs.times)
             if len(data.shape) == 1:
-                fig = px.line(y=data, x=epochs.times, **kwargs)
+                # Plot time-series
+                fig = px.line(y=data, **kwargs)
+                dash_app.div.children.append(dcc.Graph(figure=fig))
             else:
-                fig = px.imshow(data, x=epochs.times, aspect='auto', **kwargs)
-            dash_app.div.children.append(dcc.Graph(figure=fig))
+                # Plot matrix
+                fig = px.imshow(data, aspect='auto', **kwargs)
+                dash_app.div.children.append(dcc.Graph(figure=fig))
 
-            # Draw the epochs in evoked mean time-series
-            fig = px.line(y=np.mean(data, axis=0), x=epochs.times, **kwargs)
-            dash_app.div.children.append(dcc.Graph(figure=fig))
+                # Plot time-series
+                fig = px.line(y=np.mean(data, axis=0), **kwargs)
+                dash_app.div.children.append(dcc.Graph(figure=fig))
 
         dash_app.div.children.append(convert_info_to_table(epochs.info))
 
