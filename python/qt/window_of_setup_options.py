@@ -177,10 +177,12 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
             except Exception as error:
                 import traceback
+                exc = traceback.format_exc()
+                print(exc)
                 logger.error(f'MI_analysis raises error: {error}')
                 traceback_message.append(
                     f'Analysis of {protocol} got error: {error} at {datetime.now()}')
-                traceback_message.append(traceback.format_exc())
+                traceback_message.append(exc)
                 report_traceback()
                 self.textBrowser_tracebackMessage.setStyleSheet(
                     'background-color: #fedfe1')

@@ -82,6 +82,9 @@ class P300_Analysis(BaseAnalysis):
         self.methods['Classifier'] = self.Classifier
 
     def Classifier(self, selected_idx, selected_event_id, **kwargs):
+        '''
+        LDA, BLDA and EEGNet classification methods.
+        '''
         # Select epochs of all the event_id
         # Pick given channels
         epochs = self.objs[selected_idx].epochs

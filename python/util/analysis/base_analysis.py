@@ -62,7 +62,7 @@ class BaseAnalysis(object):
     protocol = 'Any'
     n_jobs = 32
     files = []
-    objs = []
+    objs = []  # All the chosen files
     options = {}
 
     # ----------------------------------------

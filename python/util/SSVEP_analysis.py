@@ -26,12 +26,14 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from io import StringIO
 from tqdm.auto import tqdm
 from PySide6 import QtWidgets
 
 from dash import dash_table
 from scipy import signal
 from sklearn import metrics
+from sklearn import model_selection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
@@ -40,7 +42,7 @@ from .default.n_jobs import n_jobs
 from . import logger, dash_app
 
 from .algorithm.FBCCA_code.FBCCA import FBCCA
-from .algorithm.FBCCA_code.CCA import CCA
+from .algorithm.TRCA.TRCA import TRCA
 
 # %% ---- 2024-06-20 ------------------------
 # Function and class
@@ -147,6 +149,171 @@ class SSVEP_Analysis(BaseAnalysis):
 
     def load_methods(self):
         self.methods['FBCCA'] = self.FBCCA
+        self.methods['TRCA'] = self.TRCA
+
+    def TRCA(self, selected_idx, selected_event_id, **kwargs):
+        '''
+        The TRCA classification method for SSVEP dataset.
+
+        Args:
+            - selected_idx (int): The selected file index.
+            - selected_event_id (int): The selected event id, only for display the selected_event_id samples.
+            - **kwargs: The kwargs placeholder for compatibility with other methods. (It is not used in this method).
+        '''
+        method = 'TRCA'
+
+        # Select epochs of all the event_id
+        # Pick given channels
+        epochs = self.objs[selected_idx].epochs
+        epochs = epochs.pick([e.upper() for e in self.options['channels']])
+
+        # Collect other epochs
+        other_epochs = [
+            e.epochs.pick([e.upper() for e in self.options['channels']])
+            for i, e in enumerate(self.objs) if i != selected_idx]
+
+        def _get_X_y(epochs):
+            '''
+            Get X and y from given epochs
+
+            Args:
+                - epochs: The epochs to get data from.
+            '''
+            # Label y
+            y = np.array(epochs.events)[:, -1]
+            # Data shape is (trials, channels, time-points)
+            X = epochs.get_data(copy=True)
+            return X, y
+
+        class LabelTransformer(object):
+            mapper = None
+            mapper_inv = None
+
+            def mk_mapper(self, y):
+                '''
+                Map each y value to 1, 2, 3 ...
+
+                Args:
+                    - y: The y values array.
+
+                Generates:
+                    - mapper: The dictionary mapping y to 1, 2, 3, ... .
+                    - mapper_inv: The dictionary mapping 1, 2, 3, ... back to y.
+
+                Returns:
+                    - (int): The length of the unique y values.
+                '''
+                uniques = np.unique(y)
+                mapper = {}
+                for i, e in enumerate(uniques):
+                    mapper[e] = i+1
+                self.mapper = mapper
+                self.mapper_inv = {v: k for k, v in mapper.items()}
+                return len(uniques)
+
+            def encode(self, y):
+                '''
+                Convert y to 1, 2, 3, ... values.
+                '''
+                return np.array([self.mapper[e] for e in y])
+
+            def decode(self, y_label):
+                '''
+                Convert y_label (1, 2, 3, ...) back to y values.
+                '''
+                return np.array([self.mapper_inv[e] for e in y_label])
+
+        # ----------------------------------------
+        # ---- Train and test based on whether other_epochs are provided or not ----
+        # If there are other_epochs, train on the other_epochs and test on the epochs
+        # If there is not other_epochs, train and test on n_splits=cv folders validation
+        cv = 5
+        if other_epochs:
+            # In case other epochs are provided.
+            # Train with training and test with testing data.
+            # Get X, y
+            pairs = [_get_X_y(e) for e in other_epochs]
+            train_X = np.concatenate([e[0] for e in pairs], axis=0)
+            train_y = np.concatenate([e[1] for e in pairs], axis=0)
+            test_X, test_y = _get_X_y(epochs)
+            logger.debug(
+                f'Data shape: {train_X.shape}, {train_y.shape}, {test_X.shape}, {test_y.shape}')
+
+            # Prepare
+            lt = LabelTransformer()
+            num = lt.mk_mapper(train_y)
+            _train_y = lt.encode(train_y)
+
+            # Train & validation
+            clf = TRCA(num)
+            clf.fit(train_X, _train_y)
+            logger.debug(f'Trained TRCA with {len(train_X)} ({num}) samples')
+            y_pred = lt.decode(clf.predict(test_X))
+            y_prob = clf.predict_proba(test_X)
+
+        else:
+            # In case other epochs are not provided.
+            # Train and validation in [cv] folders.
+            # Get X, y
+            test_X, test_y = _get_X_y(epochs)
+
+            # Prepare
+            lt = LabelTransformer()
+            num = lt.mk_mapper(test_y)
+            _test_y = lt.encode(test_y)
+
+            # Train & validation
+            clf = TRCA(num)
+
+            # Make the results bed
+            _y_pred = _test_y * 0
+            y_prob = np.zeros((len(_y_pred), num))
+
+            # Cross validation
+            skf = model_selection.StratifiedKFold(n_splits=cv)
+            for train_index, test_index in skf.split(test_X, _test_y):
+                clf.fit(test_X[train_index], _test_y[train_index])
+                _y_pred[test_index] = clf.predict(test_X[test_index])
+                y_prob[test_index] = clf.predict_proba(test_X[test_index])
+
+            # Convert 1, 2, 3, ... back to y_pred
+            y_pred = lt.decode(_y_pred)
+
+        # ----------------------------------------
+        # ---- Summary result ----
+        print(y_prob)
+        print(y_pred)
+        report = metrics.classification_report(
+            y_true=test_y, y_pred=y_pred, output_dict=True)
+        c_mat = metrics.confusion_matrix(
+            y_true=test_y, y_pred=y_pred, normalize='true')
+        logger.debug(f'Prediction result: {report}, {c_mat}')
+
+        # ----------------------------------------
+        # ---- Generate result figure ----
+
+        si = StringIO(json.dumps(report))
+        df = pd.read_json(si)
+        columns = df.columns
+        df['measurement'] = df.index
+        columns = columns.insert(0, 'measurement')
+        df = df[columns]
+        print(df)
+
+        dash_app.div.children.append(dash_table.DataTable(
+            df.to_dict("records"),
+            [{"name": i, "id": i} for i in df.columns],
+            filter_action="native",
+            filter_options={"placeholder_text": "Filter column..."},
+            page_size=10,
+        ))
+
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        sns.heatmap(c_mat, ax=ax, annot=c_mat)
+        ax.set_xlabel('True label')
+        ax.set_ylabel('Predict label')
+        ax.set_title(f'Method: {method}')
+        return fig
 
     def FBCCA(self, selected_idx, selected_event_id, **kwargs):
         '''
@@ -155,7 +322,7 @@ class SSVEP_Analysis(BaseAnalysis):
 
         Args:
             - selected_idx (int): The selected file index.
-            - selected_event_id (int): The selected event id.
+            - selected_event_id (int): The selected event id, only for display the selected_event_id samples.
             - **kwargs: The kwargs placeholder for compatibility with other methods. (It is not used in this method).
         '''
         # Select epochs of all the event_id

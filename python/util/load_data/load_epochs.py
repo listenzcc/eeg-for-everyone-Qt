@@ -103,6 +103,13 @@ class EpochsObject(RawObject):
         # epochsKwargs: baseline, detrend, decim, event_repeated, ...
         kwargs |= options.get('epochsKwargs', {})
 
+        # Discard baseline if tmin is larger than 0
+        if kwargs.get('tmin') > 0:
+            baseline = kwargs['baseline']
+            kwargs['baseline'] = (None, None)
+            logger.warning(
+                f'Forcedly reset baseline from {baseline} to (None, None) since tmin is greater than 0')
+
         if reject := options.get('reject'):
             kwargs |= dict(reject=reject)
 
