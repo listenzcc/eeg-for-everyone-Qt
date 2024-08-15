@@ -34,7 +34,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
 from .default.n_jobs import n_jobs
-from .input_dialog import require_options_with_QDialog, require_options_with_QDialog_thread
+from .input_dialog import require_options_with_QDialog, require_file_path_with_QDialog
 from . import logger, dash_app
 
 from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
@@ -223,10 +223,10 @@ class P300_Analysis(BaseAnalysis):
             # ---- Fit and predict with EEGNet ----
 
             # Get net
-            net = EEGNet()
+            net = EEGNet(model_path=require_file_path_with_QDialog())
 
             # Fit the network
-            # TODO: Actually train the model, now the method is placeholder
+            # TODO: Actually train the model. Now the method is bypassed since the pre-trained model is used.
             net.trained = True
 
             # Get X, y

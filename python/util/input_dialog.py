@@ -20,6 +20,7 @@ Functions:
 # Requirements and constants
 import json
 
+from pathlib import Path
 from threading import Thread
 from PySide6 import QtWidgets
 
@@ -86,6 +87,14 @@ def require_options_with_QDialog_thread(default_options, comment):
         target=require_options_with_QDialog,
         args=(default_options, comment),
         daemon=True).start()
+
+
+def require_file_path_with_QDialog(prompt: str = "File (*)"):
+    dialog = QtWidgets.QFileDialog(parent=None, caption=prompt)
+    if dialog.exec_():
+        path = Path(dialog.selectedFiles()[0])
+    logger.debug(f'Selected file: {path}')
+    return path
 
 # %% ---- 2024-06-25 ------------------------
 # Play ground
