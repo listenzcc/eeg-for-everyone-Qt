@@ -29,7 +29,7 @@ from . import logger
 
 # %% ---- 2024-06-25 ------------------------
 # Function and class
-def require_options_with_QDialog(default_options: dict = {}, comment: str = '# Comment'):
+def require_options_with_QDialog(default_options: dict = {}, comment: str = '# Comment', window_title='Require options', ):
     # Set text as default_options
     # It equals to
     # >> input_buffer = {'text': json.dumps(default_potions)}
@@ -42,7 +42,7 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
 
     # Make dialog
     dialog = QtWidgets.QDialog()
-    dialog.setWindowTitle('Require frequencies')
+    dialog.setWindowTitle(window_title)
 
     layout = QtWidgets.QVBoxLayout()
     text_area = QtWidgets.QTextEdit()
@@ -82,11 +82,11 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
         return {}
 
 
-def require_options_with_QDialog_thread(default_options, comment):
-    Thread(
-        target=require_options_with_QDialog,
-        args=(default_options, comment),
-        daemon=True).start()
+# def require_options_with_QDialog_thread(default_options, comment):
+#     Thread(
+#         target=require_options_with_QDialog,
+#         args=(default_options, comment),
+#         daemon=True).start()
 
 
 def require_file_path_with_QDialog(prompt: str = "File (*)"):

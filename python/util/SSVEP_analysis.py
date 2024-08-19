@@ -133,7 +133,7 @@ def require_FBCCA_options(event_id: dict):
 # The FBCCA method requires the options:
 '''
 
-    return require_options_with_QDialog(default_options, comment)
+    return require_options_with_QDialog(default_options, comment, 'Require FBCCA options')
 
 
 class SSVEP_Analysis(BaseAnalysis):

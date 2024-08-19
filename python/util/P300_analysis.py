@@ -64,7 +64,7 @@ def require_classifier_options(other_epochs):
 # - method = EEGNet: Using EEGNet algorithm
 '''
 
-    return require_options_with_QDialog(default_options, comment)
+    return require_options_with_QDialog(default_options, comment, 'Require classifier name')
 
 
 class P300_Analysis(BaseAnalysis):
