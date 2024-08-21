@@ -34,7 +34,6 @@ logger_path = project_root.joinpath(f'log/{project_name}.log')
 cache_path = project_root.joinpath('cache')
 asset_path = project_root.joinpath('asset')
 
-dash_app = DashApp()
 
 # %% ---- 2024-04-23 ------------------------
 # Play ground
@@ -44,6 +43,14 @@ logger.add(logger_path, rotation='5 MB')
 
 # %% ---- 2024-04-23 ------------------------
 # Pending
+# Initialize the dash_app
+dash_app = DashApp()
+# Handle the dynamic_html
+
+
+@dash_app.app.server.route('/get_dynamic_html', methods=['GET'])
+def _get_dynamic_html():
+    return dash_app.dynamic_html
 
 
 # %% ---- 2024-04-23 ------------------------

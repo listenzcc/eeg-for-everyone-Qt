@@ -42,6 +42,8 @@ class DashApp(object):
     host = 'localhost'
     port = 8890
 
+    dynamic_html = ''
+
     def __init__(self):
         self.app = Dash('EEG for everyone')
         self.layout()
@@ -57,7 +59,9 @@ class DashApp(object):
             style={'textAlign': 'center'})
 
         self.div = html.Div(
-            children=[]
+            children=[],
+            # Keep the div to the center of the page
+            style={'margin': 'auto', 'width': 'fit-content'}
         )
 
         self.app.layout = [

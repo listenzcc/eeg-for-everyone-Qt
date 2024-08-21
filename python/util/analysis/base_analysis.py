@@ -21,19 +21,43 @@ Functions:
 import mne
 import numpy as np
 import pandas as pd
+
+from nilearn import plotting
 import plotly.express as px
 import matplotlib.pyplot as plt
 
 from scipy.io import savemat
 from dash import dash_table, dcc
 
-from .. import logger, dash_app
+from .. import logger, dash_app, asset_path
 from ..load_data.load_epochs import EpochsObject
 
 
 # %% ---- 2024-06-14 ------------------------
 # Function and class
-def convert_info_to_table(info):
+
+# ----------------------------------------
+# ---- Read MNI positions ----
+
+
+def read_known_channel_positions() -> dict:
+    p = asset_path.joinpath('MNI-system/eeg-1010-positions.csv')
+    df_mni_positions = pd.read_csv(p, header=0, index_col=None)
+    print(df_mni_positions)
+    known_channel_positions = {}
+    for i, se in df_mni_positions.iterrows():
+        xyz = (se['X'], se['Y'], se['Z'])
+        known_channel_positions[se['Name'].upper()] = xyz
+    logger.debug(
+        f'Read known channel positions: {known_channel_positions}, file path is {p}')
+    return known_channel_positions
+
+
+known_channel_positions: dict = read_known_channel_positions()
+
+
+# %%
+def convert_info_to_table(info: dict) -> dash_table.DataTable:
     df = pd.DataFrame(
         [(k, f'{info[k]}') for k in info],
         columns=['key', 'value']
@@ -117,17 +141,92 @@ class BaseAnalysis(object):
         self.methods['Plot Events'] = self._method_plot_events
         self.methods['Plot Sensors'] = self._method_plot_sensors
         self.methods['Plot Evoked'] = self._method_plot_evoked
+        self.methods['Plot Connectivity'] = self._method_plot_connectivity
+
+    def _method_plot_connectivity(self, selected_idx, selected_event_id, **kwargs):
+        epochs = self.objs[selected_idx].epochs
+        evoked = epochs[selected_event_id].average()
+
+        # data shape is (channels x time points)
+        data = evoked.data
+
+        ch_names = epochs.info['ch_names']
+
+        # Get channel positions from known_channel_positions
+        # ! If the channel name is not available, using (0, 0, 0) instead.
+        ch_positions = [(k, known_channel_positions.get(k, (0, 0, 0)))
+                        for k in ch_names]
+        logger.debug(f'Using ch_positions: {ch_positions}')
+
+        # Raise warning if channel positions are not available
+        if not_found_position_channels := [
+            k for k in ch_names if k not in known_channel_positions
+        ]:
+            logger.warning(
+                f'Not found position channels: {not_found_position_channels}')
+
+        # Plot matrix
+        title = f'Connectivity {selected_event_id}'
+        mat = np.corrcoef(data)
+        fig, axes = plt.subplots(1, 1, figsize=(8, 8))
+        plotting.plot_matrix(
+            mat=mat, labels=ch_names, vmin=-1, vmax=1, title=title, axes=axes)
+
+        # Plot dash app
+        node_coords = [e[1] for e in ch_positions]
+        view = plotting.view_connectome(
+            adjacency_matrix=mat, node_coords=node_coords)
+
+        # Put the embed into dash_app
+        from dash import html
+        dash_app.dynamic_html = view.get_iframe(width=800, height=600)
+        dash_app.div.children.append(html.Embed(
+            src='/get_dynamic_html', width=800, height=800))
+
+        # dash_app.div.children.append(dcc.Graph(figure=view))
+
+        return fig
 
     def _method_plot_events(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs
+
         dash_app.div.children.append(convert_info_to_table(epochs.info))
 
         return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], event_id=epochs.event_id, show=False)
 
     def _method_plot_sensors(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
-        dash_app.div.children.append(convert_info_to_table(epochs.info))
 
+        # ----------------------------------------
+        # ---- Plot channels in the glass brain ----
+
+        ch_names = epochs.info['ch_names']
+
+        # Get channel positions from known_channel_positions
+        # ! If the channel name is not available, using (0, 0, 0) instead.
+        ch_positions = [(k, known_channel_positions.get(k, (0, 0, 0)))
+                        for k in ch_names]
+        logger.debug(f'Using ch_positions: {ch_positions}')
+
+        # Raise warning if channel positions are not available
+        if not_found_position_channels := [
+            k for k in ch_names if k not in known_channel_positions
+        ]:
+            logger.warning(
+                f'Not found position channels: {not_found_position_channels}')
+
+        # Plot dash app
+        node_coords = [e[1] for e in ch_positions]
+        view = plotting.view_markers(
+            marker_coords=node_coords, marker_labels=ch_names)
+
+        # Put the embed into dash_app
+        from dash import html
+        dash_app.dynamic_html = view.get_iframe(width=800, height=600)
+        dash_app.div.children.append(html.Embed(
+            src='/get_dynamic_html', width=800, height=800))
+
+        # Make Qt fig
         fig, axes = plt.subplots(1, 1, figsize=(8, 8))
         mne.viz.plot_sensors(
             epochs.info, show_names=True, axes=axes, show=False)

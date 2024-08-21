@@ -5,6 +5,7 @@
     "detrend",
     "freqs",
     "morlet",
+    "nilearn",
     "omegaconf",
     "sfreq",
     "SSVEP",

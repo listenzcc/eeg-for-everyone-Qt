@@ -85,7 +85,7 @@ class EpochsObject(RawObject):
             # Required to select some events, but they are unavailable
             logger.warning(f'Can not find any event_ids in {eventIds}')
 
-        if not events:
+        if len(events) == 0:
             logger.warning('No events found')
 
         logger.debug(
