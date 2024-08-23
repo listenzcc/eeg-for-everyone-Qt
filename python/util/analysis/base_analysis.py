@@ -30,6 +30,7 @@ from scipy.io import savemat
 from dash import dash_table, dcc
 
 from .. import logger, dash_app, asset_path
+from ..default.n_jobs import n_jobs
 from ..load_data.load_epochs import EpochsObject
 
 
@@ -142,9 +143,37 @@ class BaseAnalysis(object):
         self.methods['Plot Sensors'] = self._method_plot_sensors
         self.methods['Plot Evoked'] = self._method_plot_evoked
         self.methods['Plot Connectivity'] = self._method_plot_connectivity
+        self.methods['Plot PSD'] = self._method_plot_psd
+
+    def _method_plot_psd(self, selected_idx, selected_event_id, **kwargs):
+        # Select epochs
+        epochs = self.objs[selected_idx].epochs
+        # Select eventId
+        evoked = epochs[selected_event_id].average()
+
+        bands = {
+            'Delta (0-4 Hz)': (0, 4),
+            'Theta (4-8 Hz)': (4, 8),
+            'Alpha (8-12 Hz)': (8, 12),
+            'Beta (12-30 Hz)': (12, 30),
+            'Gamma (30-45 Hz)': (30, 45)}
+
+        fig, axes = plt.subplots(2, 3, figsize=(8, 6))
+        ravel_axes = np.ravel(axes)
+        axes = ravel_axes[:5]
+        for a in ravel_axes[5:]:
+            a.set_axis_off()
+
+        fig.suptitle(f'PSD {selected_event_id}')
+        mne.viz.plot_epochs_psd_topomap(
+            epochs, bands=bands, show=False, n_jobs=n_jobs, axes=axes)
+        fig.tight_layout()
+        return fig
 
     def _method_plot_connectivity(self, selected_idx, selected_event_id, **kwargs):
+        # Select epochs
         epochs = self.objs[selected_idx].epochs
+        # Select eventId
         evoked = epochs[selected_event_id].average()
 
         # data shape is (channels x time points)
