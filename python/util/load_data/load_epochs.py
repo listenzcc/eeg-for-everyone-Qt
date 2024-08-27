@@ -34,6 +34,7 @@ def convert_df_to_list(df):
 
 class EpochsObject(RawObject):
     epochs = None
+    epochs_without_preprocessing = None
 
     def __init__(self, file: pd.Series):
         super().__init__(file)
@@ -131,14 +132,30 @@ class EpochsObject(RawObject):
         filter_kwargs = options.get('freqBand')
         filter_kwargs |= dict(picks=kwargs['picks'])
         filter_kwargs |= dict(n_jobs=16)
-        self.raw.filter(**filter_kwargs)
+        # self.raw.filter(**filter_kwargs)
 
         # ----------------------------------------
         # ---- Fetch epochs ----
         epochs = mne.Epochs(self.raw, events, event_id, preload=True, **kwargs)
-
+        # Filter epochs
+        # To make sure the epochs_without_preprocessing is without any preprocessing,
+        # I move the filter to the epochs level.
+        epochs.filter(**filter_kwargs)
         logger.debug(f'Got epochs: {epochs}')
+
+        # Epochs without any preprocessing
+        kwargs_without_preprocessing = {
+            k: v for k, v in kwargs.items()
+            if k in ['tmin', 'tmax', 'picks', 'event_repeated', 'decim']}
+        epochs_without_preprocessing = mne.Epochs(
+            self.raw, events, event_id, preload=True, **kwargs_without_preprocessing)
+        logger.debug(
+            f'Got epochs_without_preprocessing: {epochs_without_preprocessing}')
+
         self.epochs = epochs
+        self.epochs_without_preprocessing = epochs_without_preprocessing
+
+        return
 
 
 # %% ---- 2024-06-14 ------------------------

@@ -32,6 +32,7 @@ from dash import dash_table, dcc
 from .. import logger, dash_app, asset_path
 from ..default.n_jobs import n_jobs
 from ..load_data.load_epochs import EpochsObject
+from ..algorithm.DataQualityRuler import rulers
 
 
 # %% ---- 2024-06-14 ------------------------
@@ -144,6 +145,79 @@ class BaseAnalysis(object):
         self.methods['Plot Evoked'] = self._method_plot_evoked
         self.methods['Plot Connectivity'] = self._method_plot_connectivity
         self.methods['Plot PSD'] = self._method_plot_psd
+        self.methods['Plot QualityIndex'] = self._method_plot_quality_index
+
+    def _method_plot_quality_index(self, selected_idx, selected_event_id, **kwargs):
+        # ----------------------------------------
+        # ---- Select data ----
+        # Select epochs
+        epochs: mne.Epochs = self.objs[selected_idx].epochs
+        epochs_without_preprocessing: mne.Epochs = self.objs[
+            selected_idx].epochs_without_preprocessing
+        # Select eventId
+        num_id = epochs.event_id[selected_event_id]
+        # data shape is (samples, sensors, time points)
+        # noise supposes to be of the same size.
+        data = epochs.get_data(copy=True)
+        noise = epochs_without_preprocessing.get_data(copy=True)
+        # label shape is (samples,)
+        label = np.zeros((len(data), 1))
+        label[epochs.events[:, -1] == num_id] = 1
+        # Get channel_names
+        channel_names = epochs.info['ch_names']
+        # Get times
+        times = epochs.times
+
+        # ----------------------------------------
+        # ---- Compute ----
+        # Compute bl_drift
+        if times[0] < 0:
+            # There are negative times data
+            # Select negative times data
+            correct = data[:, :, times < 0]
+            bl_drift = rulers.BL_Drift(correct, channel_names=channel_names)
+            logger.debug(f'The BL_Drift is {bl_drift}')
+        else:
+            # There are not negative times data
+            logger.warning(
+                'The BL_Drift is not available (not negative times data)')
+
+        # Compute SNR_Target
+        snr_target = rulers.SNR_Target(data, label, channel_names)
+        logger.debug(f'Computed snr_target: {snr_target}')
+
+        # Compute SNR_Preprocess
+        snr_preprocess = rulers.SNR_Preprocess(
+            noise, data, label, channel_names)
+        logger.debug(f'Computed snr_preprocess: {snr_preprocess}')
+
+        # ----------------------------------------
+        # ---- Plot ----
+        fig, axes = plt.subplots(1, 3, figsize=(8, 6))
+
+        ax = axes[0]
+        im, cn = mne.viz.plot_topomap(
+            list(snr_target.values()), epochs.info, sensors=True, axes=ax)
+        fig.colorbar(im, ax=ax, label='dB', shrink=0.5)
+        ax.set_title('SNR Target')
+
+        ax = axes[1]
+        im, cn = mne.viz.plot_topomap(
+            list(snr_preprocess.values()), epochs.info, sensors=True, axes=ax)
+        fig.colorbar(im, ax=ax, label='dB', shrink=0.5)
+        ax.set_title('SNR Preprocess')
+
+        ax = axes[2]
+        try:
+            im, cn = mne.viz.plot_topomap(
+                list(bl_drift.values()), epochs.info, sensors=True, axes=ax)
+            fig.colorbar(im, ax=ax, label='', shrink=0.5)
+            ax.set_title('BL Drift')
+        except Exception:
+            ax.set_axis_off()
+
+        fig.tight_layout()
+        return fig
 
     def _method_plot_psd(self, selected_idx, selected_event_id, **kwargs):
         # Select epochs

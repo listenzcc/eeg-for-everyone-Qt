@@ -33,8 +33,10 @@ def ITR_ERP(N, P, T):
     return 60*ITR
 
 
-def BL_Drift(correct):
+def BL_Drift(correct, channel_names):
     """
+    Compute on the data **BEFORE** the preprocessing.
+
     input
         correct 格式 (stims , channels, length)
         correct为截取时间点前的校正数据
@@ -42,13 +44,7 @@ def BL_Drift(correct):
         (channels, 1)
     """
 
-    corrected_data = np.zeros_like(correct)
-    for i in range(correct.shape[0]):
-        channel_std = np.std(correct[i, :, :], axis=1)
-        corrected_data[i, :] = channel_std
-
-    bl_drift = np.mean(corrected_data, axis=0)
-    return bl_drift
+    return dict(zip(channel_names, np.mean(np.std(correct, axis=2), axis=0)))
 
 
 def SNR_Target(data, label, channel_names):
