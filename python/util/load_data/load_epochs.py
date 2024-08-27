@@ -148,7 +148,7 @@ class EpochsObject(RawObject):
             k: v for k, v in kwargs.items()
             if k in ['tmin', 'tmax', 'picks', 'event_repeated', 'decim']}
         epochs_without_preprocessing = mne.Epochs(
-            self.raw, events, event_id, preload=True, **kwargs_without_preprocessing)
+            self.raw, events, event_id, baseline=None, preload=True, **kwargs_without_preprocessing)
         logger.debug(
             f'Got epochs_without_preprocessing: {epochs_without_preprocessing}')
 
