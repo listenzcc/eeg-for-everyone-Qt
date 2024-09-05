@@ -25,8 +25,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from dash import dash_table
+from dash import dash_table, dcc
 from tqdm.auto import tqdm
+
+import plotly.express as px
 
 from sklearn import metrics
 from sklearn import model_selection
@@ -39,6 +41,7 @@ from . import logger, dash_app
 
 from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 from .algorithm.EEGNet.EEGNet import EEGNet
+from .algorithm.R_Sqrt import r2_sqrt
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
@@ -80,6 +83,43 @@ class P300_Analysis(BaseAnalysis):
 
     def load_methods(self):
         self.methods['Classifier'] = self.Classifier
+        self.methods['R2Index'] = self.r2_index
+
+    def r2_index(self, selected_idx, selected_event_id, **kwargs):
+        # Load the epochs and read the data & events
+        epochs = self.objs[selected_idx].epochs
+
+        def convert_events(events):
+            # Convert 1 to 0, larger numbers to 1
+            output = np.array(events).copy()
+            output[events == 1] = 0
+            output[events > 1] = 1
+            return output
+
+        events = convert_events(epochs.events[:, -1])
+        data = epochs.get_data()
+        r2_matrix = r2_sqrt(data, events)
+
+        # Render html
+
+        kwargs = dict(title='R2 index', x=epochs.times,
+                      y=epochs.info['ch_names'])
+        fig = px.imshow(r2_matrix, aspect='auto', **kwargs)
+        dash_app.div.children.append(dcc.Graph(figure=fig))
+
+        # Plot
+        evoked = epochs.average()
+        # Convert the ruler to -1 ~ 1 by force
+        evoked.data = r2_matrix * 1e-6
+
+        fig = evoked.plot_joint(
+            title='R2 index',
+            show=False,
+            exclude=['ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'],
+            ts_args=dict(units={'eeg': 'R2'})
+        )
+
+        return fig
 
     def Classifier(self, selected_idx, selected_event_id, **kwargs):
         '''
