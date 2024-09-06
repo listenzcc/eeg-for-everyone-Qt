@@ -32,6 +32,7 @@ import plotly.express as px
 
 from sklearn import metrics
 from sklearn import model_selection
+from sklearn.pipeline import Pipeline
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
@@ -42,6 +43,7 @@ from . import logger, dash_app
 from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 from .algorithm.EEGNet.EEGNet import EEGNet
 from .algorithm.R_Sqrt import r2_sqrt
+from .algorithm.Lasso_Preprocess import Lasso_Process
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
@@ -51,12 +53,16 @@ def require_classifier_options(other_epochs):
     if other_epochs:
         default_options = {
             'method': 'lda',
+            'lassoFlag': 'True',
+            'lassoAlpha': 0.01
         }
         logger.debug('Has other epochs')
     else:
         default_options = {
             'method': 'lda',
-            'crossValidation': 5
+            'crossValidation': 5,
+            'lassoFlag': 'True',
+            'lassoAlpha': 0.01
         }
         logger.debug('Does not have other epochs')
 
@@ -102,8 +108,9 @@ class P300_Analysis(BaseAnalysis):
 
         # Render html
 
-        kwargs = dict(title='R2 index', x=epochs.times,
-                      y=epochs.info['ch_names'])
+        kwargs = dict(
+            title='R2 index', x=epochs.times,
+            y=epochs.info['ch_names'])
         fig = px.imshow(r2_matrix, aspect='auto', **kwargs)
         dash_app.div.children.append(dcc.Graph(figure=fig))
 
@@ -137,10 +144,15 @@ class P300_Analysis(BaseAnalysis):
 
         # Get input options
         inp = require_classifier_options(other_epochs)
+        logger.debug(f'Got input options: {inp}')
 
         # Choose classification method for 'lda' (faster) or 'blda' (slower)
         method = inp.get('method')
         cv = int(inp.get('crossValidation', 5))
+        lasso_flag = inp.get('lassoFlag', '').lower() == 'true'
+        lasso_alpha = float(inp.get('alpha', 0.01))
+        if lasso_flag:
+            logger.debug(f'Using lasso and its alpha is {lasso_alpha}')
 
         def _blda_get_X_y(epochs):
             # Convert the >1 values to 1, 1 value to 0
@@ -152,6 +164,7 @@ class P300_Analysis(BaseAnalysis):
 
             # Data shape is (trials, channels, time-points)
             X = epochs.get_data(copy=True)
+            logger.debug(f'Got X({X.shape}) and y({y.shape}) for blda.')
             return X, y
 
         def _lda_get_X_y(epochs):
@@ -159,7 +172,8 @@ class P300_Analysis(BaseAnalysis):
             y = np.array(epochs.events)[:, -1]
             # Data shape is (trials, channels, time-points)
             X = epochs.get_data(copy=True)
-            X = X.reshape(len(X), -1)
+            # X = X.reshape(len(X), -1)
+            logger.debug(f'Got X({X.shape}) and y({y.shape}) for lda.')
             return X, y
 
         # ----------------------------------------
@@ -179,6 +193,26 @@ class P300_Analysis(BaseAnalysis):
             logger.debug(
                 f'Data shape: {train_X.shape}, {train_y.shape}, {test_X.shape}, {test_y.shape}')
 
+            # ----------------------------------------
+            # ---- Lasso selection ----
+            if lasso_flag:
+                lp = Lasso_Process(alpha=lasso_alpha)
+                selected_channels = lp.select_channels_index(train_X, train_y)
+                logger.debug(
+                    f'Lasso selects {len(selected_channels)} channels')
+
+                # Select all the channels if the lasso selects nothing
+                if len(selected_channels) == 0:
+                    selected_channels = list(range(test_X.shape[1]))
+                    logger.warning(
+                        'Using all the channels since the lasso selects nothing')
+            else:
+                # Select all the channels if not using lasso
+                selected_channels = list(range(test_X.shape[1]))
+
+            train_X = train_X[:, selected_channels]
+            test_X = test_X[:, selected_channels]
+
             # Train & validation
             clf.fit(train_X.transpose((1, 2, 0)), train_y)
             y_prob = clf.predict(test_X.transpose((1, 2, 0)))
@@ -195,6 +229,27 @@ class P300_Analysis(BaseAnalysis):
             test_X, test_y = _lda_get_X_y(epochs)
             logger.debug(
                 f'Data shape: {train_X.shape}, {train_y.shape}, {test_X.shape}, {test_y.shape}')
+
+            # ----------------------------------------
+            # ---- Lasso selection ----
+            if lasso_flag:
+                lp = Lasso_Process(alpha=lasso_alpha)
+                selected_channels = lp.select_channels_index(train_X, train_y)
+                logger.debug(
+                    f'Lasso selects {len(selected_channels)} channels')
+
+                # Select all the channels if the lasso selects nothing
+                if len(selected_channels) == 0:
+                    selected_channels = list(range(test_X.shape[1]))
+                    logger.warning(
+                        'Using all the channels since the lasso selects nothing')
+            else:
+                # Select all the channels if not using lasso
+                selected_channels = list(range(test_X.shape[1]))
+
+            # Flatten the data dimensions
+            train_X = train_X[:, selected_channels].reshape(len(train_X), -1)
+            test_X = test_X[:, selected_channels].reshape(len(test_X), -1)
 
             # Train & validation
             '''
@@ -234,12 +289,41 @@ class P300_Analysis(BaseAnalysis):
             skf = model_selection.StratifiedKFold(n_splits=cv)
             n = len(test_y)
             y_prob = np.zeros((n, 1))
-            for i, (train_index, test_index) in tqdm(enumerate(skf.split(test_X, test_y))):
+            for i, (train_index, test_index) in tqdm(list(enumerate(skf.split(test_X, test_y)))):
+                if lasso_flag:
+                    lp = Lasso_Process(alpha=lasso_alpha)
+                    selected_channels = lp.select_channels_index(
+                        test_X[train_index], test_y[train_index])
+                    logger.debug(
+                        f'Lasso selects {len(selected_channels)} channels')
+
+                    # Select all the channels if the lasso selects nothing
+                    if len(selected_channels) == 0:
+                        selected_channels = list(range(test_X.shape[1]))
+                        logger.warning(
+                            'Using all the channels since the lasso selects nothing')
+                else:
+                    # Select all the channels if not using lasso
+                    selected_channels = list(range(test_X.shape[1]))
+
                 # Transpose dim to fit (channels, time_series, trials)
-                clf.fit(test_X[train_index].transpose(
-                    (1, 2, 0)), test_y[train_index])
-                y_prob[test_index] = clf.predict(
-                    test_X[test_index].transpose((1, 2, 0)))
+                a = test_X[train_index][:,
+                                        selected_channels].transpose((1, 2, 0))
+                b = test_y[train_index]
+                c = test_X[test_index][:,
+                                       selected_channels].transpose((1, 2, 0))
+
+                # Train & test
+                clf.fit(a, b)
+                y_prob[test_index] = clf.predict(c)
+
+                # # Transpose dim to fit (channels, time_series, trials)
+                # clf.fit(test_X[train_index].transpose(
+                #     (1, 2, 0)), test_y[train_index])
+
+                # y_prob[test_index] = clf.predict(
+                #     test_X[test_index].transpose((1, 2, 0)))
+
             y_pred = post_process_y_prob(y_prob)
 
         elif not other_epochs and method.lower() == 'lda':
@@ -252,11 +336,37 @@ class P300_Analysis(BaseAnalysis):
             test_X, test_y = _lda_get_X_y(epochs)
 
             # Train & validation
-            y_prob = model_selection.cross_val_predict(
-                clf, test_X, test_y, cv=cv, n_jobs=n_jobs, method='predict_proba')
-            y_prob = y_prob[:, -1]
-            y_pred = model_selection.cross_val_predict(
-                clf, test_X, test_y, cv=cv, n_jobs=n_jobs, method='predict')
+            skf = model_selection.StratifiedKFold(n_splits=cv)
+            n = len(test_y)
+            y_pred = np.zeros((n, 1))
+            y_prob = np.zeros((n, 1))
+            for i, (train_index, test_index) in tqdm(list(enumerate(skf.split(test_X, test_y)))):
+                if lasso_flag:
+                    lp = Lasso_Process(alpha=lasso_alpha)
+                    selected_channels = lp.select_channels_index(
+                        test_X[train_index], test_y[train_index])
+                    logger.debug(
+                        f'Lasso selects {len(selected_channels)} channels')
+
+                    # Select all the channels if the lasso selects nothing
+                    if len(selected_channels) == 0:
+                        selected_channels = list(range(test_X.shape[1]))
+                        logger.warning(
+                            'Using all the channels since the lasso selects nothing')
+                else:
+                    # Select all the channels if not using lasso
+                    selected_channels = list(range(test_X.shape[1]))
+
+                a = test_X[train_index][:, selected_channels].reshape(
+                    len(train_index), -1)
+                b = test_y[train_index]
+                c = test_X[test_index][:, selected_channels].reshape(
+                    len(test_index), -1)
+
+                clf.fit(a, b)
+                y_pred[test_index, 0] = clf.predict(c)
+                # I need the proba of the largest label value
+                y_prob[test_index, 0] = clf.predict_proba(c)[:, -1]
 
         elif method.lower() == 'eegnet':
             # ----------------------------------------
@@ -273,7 +383,6 @@ class P300_Analysis(BaseAnalysis):
             test_X, test_y = _blda_get_X_y(epochs)
 
             # Predict
-            print(test_X.shape, test_y.shape)
             y_prob = net.predict_proba(test_X)
             y_pred = net.predict(test_X)
 

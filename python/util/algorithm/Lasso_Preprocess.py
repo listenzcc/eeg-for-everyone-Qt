@@ -15,23 +15,33 @@ class Lasso_Process:
     """
 
     def __init__(self, **kwargs):
-        self.data = kwargs.get('Data', None)
-        self.events = kwargs.get('Events', None)
-        self.montage = kwargs.get('montage',
-                                  ['Fpz', 'Fp1', 'Fp2', 'AF3', 'AF4', 'AF7', 'AF8', 'Fz', 'F1', 'F2', 'F3',
-                                   'F4', 'F5', 'F6', 'F7', 'F8', 'FCz', 'FC1', 'FC2', 'FC3', 'FC4', 'FC5', 'FC6',
-                                   'FT7', 'FT8', 'Cz', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'T7', 'T8', 'CP1',
-                                   'CP2', 'CP3', 'CP4', 'CP5', 'CP6', 'TP7', 'TP8', 'Pz', 'P3', 'P4', 'P5', 'P6',
-                                   'P7', 'P8', 'POz', 'PO3', 'PO4', 'PO5', 'PO6', 'PO7', 'PO8', 'Oz', 'O1', 'O2',
-                                   'ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'])
+        # self.data = kwargs.get('Data', None)
+        # self.events = kwargs.get('Events', None)
+        # self.montage = kwargs.get('montage',
+        #                           ['Fpz', 'Fp1', 'Fp2', 'AF3', 'AF4', 'AF7', 'AF8', 'Fz', 'F1', 'F2', 'F3',
+        #                            'F4', 'F5', 'F6', 'F7', 'F8', 'FCz', 'FC1', 'FC2', 'FC3', 'FC4', 'FC5', 'FC6',
+        #                            'FT7', 'FT8', 'Cz', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'T7', 'T8', 'CP1',
+        #                            'CP2', 'CP3', 'CP4', 'CP5', 'CP6', 'TP7', 'TP8', 'Pz', 'P3', 'P4', 'P5', 'P6',
+        #                            'P7', 'P8', 'POz', 'PO3', 'PO4', 'PO5', 'PO6', 'PO7', 'PO8', 'Oz', 'O1', 'O2',
+        #                            'ECG', 'HEOR', 'HEOL', 'VEOU', 'VEOL'])
 
-        self.select_channels = None
+        # self.select_channels = None
         self.channel_importance = kwargs.get("importance", None)
         self.alpha = kwargs.get("alpha", 0.01)
         self.select_data = None
         self.test_size = kwargs.get("test_size", 0.3)
 
+    def select_channels_index(self, X, y):
+        # Use the self.data if data is not provided
+        # Reload the self.data if data is provided
+        self.data = X
+        self.events = y
+        return self.fit()
+
     def fit(self):
+        '''
+        Fit the lasso model.
+        '''
         if self.data is None or not self.data.any():
             raise ValueError("数据未正常加载！")
         if self.events is None or not self.events.any():
@@ -52,6 +62,5 @@ class Lasso_Process:
         self.channel_importance = np.sum(np.abs(lasso_coefficients), axis=1)
 
         self.select_channels = np.where(self.channel_importance)[0]
-        self.select_data = self.data[:, self.select_channels, :]
 
         return self.select_channels
