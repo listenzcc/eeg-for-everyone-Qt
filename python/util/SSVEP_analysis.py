@@ -43,6 +43,7 @@ from . import logger, dash_app
 
 from .algorithm.FBCCA_code.FBCCA import FBCCA
 from .algorithm.TRCA.TRCA import TRCA
+from .algorithm.SSVEP_phase.phase_analysis import compute_phase_diff
 
 # %% ---- 2024-06-20 ------------------------
 # Function and class
@@ -136,6 +137,23 @@ def require_FBCCA_options(event_id: dict):
     return require_options_with_QDialog(default_options, comment, 'Require FBCCA options')
 
 
+def require_phase_options(event_id: dict):
+    # Default options
+    def convert_v_to_freq(v):
+        # Convert 1-40 to 8-15.8 Hz
+        return round(8.0 + v * 0.2, 1)
+
+    default_options = {
+        'labelToFreq': {str(v): convert_v_to_freq(v) for k, v in event_id.items()},
+    }
+
+    comment = '''
+# The SSVEP phase method requires the options:
+'''
+
+    return require_options_with_QDialog(default_options, comment, 'Require SSVEP phase options')
+
+
 class SSVEP_Analysis(BaseAnalysis):
     protocol = 'SSVEP'
 
@@ -150,6 +168,30 @@ class SSVEP_Analysis(BaseAnalysis):
     def load_methods(self):
         self.methods['FBCCA'] = self.FBCCA
         self.methods['TRCA'] = self.TRCA
+        self.methods['Plot PhaseDiff'] = self.plot_phase_diff
+
+    def plot_phase_diff(self, selected_idx, selected_event_id, **kwargs):
+        # Select epochs of all the event_id
+        # Pick given channels
+        epochs = self.objs[selected_idx].epochs
+        epochs = epochs.pick([e.upper() for e in self.options['channels']])
+
+        # ----------------------------------------
+        # ---- User input for frequencies ----
+        inp = require_phase_options(epochs.event_id)
+        logger.debug(f'Got input: {inp}')
+        print(inp)
+        sim_freq = [inp['labelToFreq'][str(e[-1])] for e in epochs.events]
+        X = epochs.get_data(copy=True)
+        sampling_rate = epochs.info['sfreq']
+        phase_absolute, phase_diff = compute_phase_diff(
+            X, sim_freq, sampling_rate)
+        print(X.shape)
+        print(sim_freq)
+        print(sampling_rate)
+        print(phase_absolute)
+        print(phase_diff)
+        return
 
     def TRCA(self, selected_idx, selected_event_id, **kwargs):
         '''
