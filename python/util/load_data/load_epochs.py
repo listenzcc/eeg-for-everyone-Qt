@@ -132,7 +132,7 @@ class EpochsObject(RawObject):
         filter_kwargs = options.get('freqBand')
         filter_kwargs |= dict(picks=kwargs['picks'])
         filter_kwargs |= dict(n_jobs=16)
-        # self.raw.filter(**filter_kwargs)
+        self.raw.filter(**filter_kwargs)
 
         # ----------------------------------------
         # ---- Fetch epochs ----

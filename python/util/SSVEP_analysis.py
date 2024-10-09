@@ -180,18 +180,23 @@ class SSVEP_Analysis(BaseAnalysis):
         # ---- User input for frequencies ----
         inp = require_phase_options(epochs.event_id)
         logger.debug(f'Got input: {inp}')
-        print(inp)
         sim_freq = [inp['labelToFreq'][str(e[-1])] for e in epochs.events]
         X = epochs.get_data(copy=True)
         sampling_rate = epochs.info['sfreq']
-        phase_absolute, phase_diff = compute_phase_diff(
+        phase_absolute, phase_diff, freqs = compute_phase_diff(
             X, sim_freq, sampling_rate)
-        print(X.shape)
-        print(sim_freq)
-        print(sampling_rate)
-        print(phase_absolute)
-        print(phase_diff)
-        return
+
+        phase_diff += 2
+        phase_diff %= 1
+        # phase_diff /= np.pi
+
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        sns.barplot(x=freqs[:-1], y=phase_diff, ax=ax)
+        ax.axhline(y=0.5)
+        ax.set_xlabel('Freqs')
+        ax.set_ylabel('Phase diff')
+        ax.set_title('Phase analysis for SSVEP')
+        return fig
 
     def TRCA(self, selected_idx, selected_event_id, **kwargs):
         '''
