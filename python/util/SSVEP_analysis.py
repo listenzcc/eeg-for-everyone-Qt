@@ -173,15 +173,21 @@ class SSVEP_Analysis(BaseAnalysis):
     def plot_phase_diff(self, selected_idx, selected_event_id, **kwargs):
         # Select epochs of all the event_id
         # Pick given channels
-        epochs = self.objs[selected_idx].epochs
+        epochs: mne.Epochs = self.objs[selected_idx].epochs
         epochs = epochs.pick([e.upper() for e in self.options['channels']])
+
+        # Only support 1-40 values
+        epochs = epochs[[e[-1] in range(1, 41) for e in epochs.events]]
 
         # ----------------------------------------
         # ---- User input for frequencies ----
         inp = require_phase_options(epochs.event_id)
         logger.debug(f'Got input: {inp}')
-        sim_freq = [inp['labelToFreq'][str(e[-1])] for e in epochs.events]
+
+        sim_freq = [inp['labelToFreq'].get(
+            str(e[-1]), None) for e in epochs.events]
         X = epochs.get_data(copy=True)
+
         sampling_rate = epochs.info['sfreq']
         phase_absolute, phase_diff, freqs = compute_phase_diff(
             X, sim_freq, sampling_rate)
