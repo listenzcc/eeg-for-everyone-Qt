@@ -42,6 +42,10 @@ class EpochsObject(RawObject):
     def get_epochs(self, options: dict):
         events, event_id = mne.events_from_annotations(self.raw)
 
+        # ! I don't know what is happening, but the event_id's key is like np.str_('1')
+        # ! So, I have to fix it.
+        event_id = {str(k): v for k, v in event_id.items()}
+
         # Find all the selected event_ids if it is provided.
         # But, if 'all' is in the list, using event_ids.
         # still, if can not find any event_ids of selected, using all event_ids instead.
@@ -54,7 +58,7 @@ class EpochsObject(RawObject):
             logger.debug('Selecting all the event_ids as required')
 
         elif selected_event_id := {
-            k: v for k, v in event_id.items() if k in eventIds
+            str(k): v for k, v in event_id.items() if k in eventIds
         }:
             values = list(selected_event_id.values())
             df = pd.DataFrame(

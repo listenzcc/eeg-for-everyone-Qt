@@ -4,6 +4,30 @@
 
 ---
 
+## Bug fixes
+
+The MNE packages are not so solid.
+
+```python
+# Solve the problem of 'multitaper' psd function not recognizing 'names' keyword argument.
+
+# File: Lib/site-packages/mne/time_frequency/spectrum.py
+# Method: BaseSpectrum
+# Lineno: 324
+# Append the popping code:
+
+# triage method and kwargs. partial() doesn't check validity of kwargs,
+# so we do it manually to save compute time if any are invalid.
+psd_funcs = dict(welch=psd_array_welch, multitaper=psd_array_multitaper)
+
+# Solve the problem of MNE
+if method == 'multitaper' and 'names' in method_kw:
+    method_kw.pop('names')
+
+_check_method_kwargs(psd_funcs[method], method_kw, msg=f'PSD method "{method}"')
+
+```
+
 ## UI design
 
 I use the `pyside6-designer.exe` for UI design.
