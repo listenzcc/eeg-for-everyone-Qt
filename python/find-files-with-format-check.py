@@ -38,7 +38,7 @@ from util.find_files import find_files, format_check
 # Play ground
 if __name__ == '__main__':
     folders = [
-        Path('D://脑机接口专项')
+        Path('D://脑机接口专项-样例库-202502')
     ]
 
     tic = time.time()

@@ -92,6 +92,20 @@ def parse_as_eeg_file_path(path: Path, folder: Path):
     return output
 
 
+def event2int(e: str):
+    '''
+    Convert the event into the int representation.
+    If failed, return -1.
+
+    :param e: The event string.
+    :return: The int representation of the event, of -1 if failed.
+    '''
+    try:
+        return int(e)
+    except ValueError:
+        return -1
+
+
 def read_known_protocols():
     dct = json.load(open(project_root.joinpath(
         'asset/protocols.json'), encoding='utf8'))
@@ -257,8 +271,8 @@ def _check_P300(raw):
         # Filter the valid events
         # Check events minimum number not less than 9 kinds
         event_id_inv = {v: k for k, v in event_id.items()}
-        events = [e for e in events if int(
-            event_id_inv[e[2]]) > 0 and int(event_id_inv[e[2]]) < 100]
+        events = [e for e in events if event2int(
+            event_id_inv[e[2]]) > 0 and event2int(event_id_inv[e[2]]) < 100]
         n_events = {e[2] for e in events}
         if len(n_events) < 9:
             suspects['n_events'].append(
@@ -409,8 +423,8 @@ def _check_SSVEP(raw):
         # Filter the valid events
         # Check events minimum number not less than 10 kinds
         event_id_inv = {v: k for k, v in event_id.items()}
-        events = [e for e in events if int(
-            event_id_inv[e[2]]) > 0 and int(event_id_inv[e[2]]) < 241]
+        events = [e for e in events if event2int(
+            event_id_inv[e[2]]) > 0 and event2int(event_id_inv[e[2]]) < 241]
         n_events = {e[2] for e in events}
         if len(n_events) < 10:
             suspects['n_events'].append(

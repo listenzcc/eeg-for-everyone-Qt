@@ -89,8 +89,16 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
 #         daemon=True).start()
 
 
-def require_file_path_with_QDialog(prompt: str = "File (*)"):
-    dialog = QtWidgets.QFileDialog(parent=None, caption=prompt)
+def require_file_path_with_QDialog(caption: str = "File (*)", directory=None):
+    '''
+    Select the file with QDialog.
+
+    :param caption str: the caption for file selection Dialog.
+    :param directory str: the startup directory for file selection Dialog.
+    :return: the selected file path.
+    '''
+    dialog = QtWidgets.QFileDialog(
+        parent=None, caption=caption, directory=directory)
     if dialog.exec_():
         path = Path(dialog.selectedFiles()[0])
     logger.debug(f'Selected file: {path}')

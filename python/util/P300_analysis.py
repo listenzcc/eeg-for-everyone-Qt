@@ -373,7 +373,9 @@ class P300_Analysis(BaseAnalysis):
             # ---- Fit and predict with EEGNet ----
 
             # Get net
-            net = EEGNet(model_path=require_file_path_with_QDialog())
+            directory = self.files[0]['path'].parent.as_posix()
+            net = EEGNet(MODEL_PATH=require_file_path_with_QDialog(
+                directory=directory))
 
             # Fit the network
             # TODO: Actually train the model. Now the method is bypassed since the pre-trained model is used.
