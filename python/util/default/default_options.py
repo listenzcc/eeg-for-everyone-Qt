@@ -35,7 +35,7 @@ class AnyDefaultOptions:
     long_name = 'Any protocol'
 
     # --------------------
-    channels = ['C3', 'CZ', 'C4']
+    channels = ['eeg']
     eventIds = ['all']
     epochTimes = dict(tmin=-1.0, tmax=5.0)
     freqBand = dict(l_freq=1.0, h_freq=25.0)

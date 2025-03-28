@@ -133,6 +133,13 @@ class SetupOptionsWindow(BaseProtocolWindow):
             protocol = self.protocol
             options = self.options
 
+            # Correct the channels into ['eeg'] or uppercase channel names.
+            if channels := options.get('channels'):
+                if channels == ['eeg']:
+                    pass
+                else:
+                    options['channels'] = [e.upper() for e in channels]
+
             traceback_message = [
                 f'Analysis of {protocol} started at {datetime.now()}',
                 '!!! No news is good news']
@@ -179,7 +186,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
                 import traceback
                 exc = traceback.format_exc()
                 print(exc)
-                logger.error(f'MI_analysis raises error: {error}')
+                logger.error(f'{protocol} raises error: {error}')
                 traceback_message.append(
                     f'Analysis of {protocol} got error: {error} at {datetime.now()}')
                 traceback_message.append(exc)

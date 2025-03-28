@@ -44,6 +44,8 @@ if __name__ == '__main__':
     group = group[['path']]
     print(group.count())
 
+    group.count().to_csv(open(cache_path.joinpath('summary.csv'), 'w'))
+
 
 # %% ---- 2024-04-23 ------------------------
 # Pending

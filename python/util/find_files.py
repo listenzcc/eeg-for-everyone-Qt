@@ -82,12 +82,12 @@ def parse_as_eeg_file_path(path: Path, folder: Path):
     if name == 'data.bdf':
         evt_path = path.parent.joinpath('evt.bdf')
 
-        output = EEG_File(
-            path=path, short_name=short_name, protocol=protocol, format='.bdf')
-
         if evt_path.is_file():
             output = EEG_File(
                 path=path, evt_path=evt_path, short_name=short_name, protocol=protocol, format='.bdf')
+        else:
+            output = EEG_File(
+                path=path, short_name=short_name, protocol=protocol, format='.bdf')
 
     return output
 
@@ -195,6 +195,19 @@ def format_check(file: pd.Series):
         if any(suspects.values()):
             output |= dict(status='failed', checks=checks, suspects=suspects)
             logger.warning(f'MI checks failed: {output}')
+        else:
+            output |= dict(status='passed', checks=checks, suspects=suspects)
+
+        return output
+
+    # ----------------------------------------
+    # ---- MultiModel check ----
+    if file['protocol'] == 'MultiModel':
+        suspects, checks = _check_MultiModel(obj.raw)
+
+        if any(suspects.values()):
+            output |= dict(status='failed', checks=checks, suspects=suspects)
+            logger.warning(f'MultiModel checks failed: {output}')
         else:
             output |= dict(status='passed', checks=checks, suspects=suspects)
 
@@ -347,6 +360,50 @@ def _check_MI(raw):
                 f'The total length must not be less than 180 seconds, but the value is {
                     total_length}'
             )
+
+    try:
+        _check()
+    except Exception:
+        suspects['traceback'] = [traceback.format_exc()]
+
+    # --------------------
+    # No message is good message
+    return suspects, checks
+
+
+def _check_MultiModel(raw):
+    # Something I want to know
+    checks = dict(
+        ch_names=[],
+        sfreq=None,
+        event_id={},
+        total_length=None
+    )
+
+    # Something is wrong
+    suspects = dict(
+        channels=[],
+        sfreq=[],
+        n_events=[],
+        total_length=[],
+        min_gap=[],
+    )
+
+    def _check():
+        # --------------------
+        # Fetch information
+        ch_names = raw.info['ch_names']
+        sfreq = raw.info['sfreq']
+        events, event_id = mne.events_from_annotations(raw)
+        total_length = np.max([e[0] for e in events]) / \
+            sfreq if len(events) > 0 else None
+
+        checks.update(
+            ch_names=ch_names,
+            sfreq=sfreq,
+            event_id=event_id,
+            total_length=total_length)
+        pass
 
     try:
         _check()

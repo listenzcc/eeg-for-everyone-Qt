@@ -296,7 +296,7 @@ class BaseAnalysis(object):
 
         dash_app.div.children.append(convert_info_to_table(epochs.info))
 
-        return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], event_id=epochs.event_id, show=False)
+        return mne.viz.plot_events(epochs.events, epochs.info['sfreq'], on_missing='ignore', event_id=epochs.event_id, show=False)
 
     def _method_plot_sensors(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
@@ -338,11 +338,19 @@ class BaseAnalysis(object):
 
     def _method_plot_evoked(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs[selected_event_id]
+        if channels := self.options['channels']:
+            epochs.pick(channels)
+
+        all_data = epochs.get_data()
+        print(all_data.shape)
 
         # Plot into the dashboard
         dash_app.div.children.append('Epochs detail')
-        for ch_name in self.options['channels']:
-            data = epochs.copy().pick([ch_name.upper()]).get_data(copy=False)
+
+        # for ch_name in epochs.info['ch_names']:  # self.options['channels']:
+        #     data = epochs.copy().pick(ch_name).get_data(copy=False)
+
+        for ch_name, data in zip(epochs.info['ch_names'], all_data):
             # Squeeze data shape into (trials x times)
             data = data.squeeze()
 

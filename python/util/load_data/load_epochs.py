@@ -100,7 +100,7 @@ class EpochsObject(RawObject):
         # ---- Make kwargs ----
         # Picks
         if channels := options.get('channels'):
-            kwargs = dict(picks=[e.upper() for e in channels])
+            kwargs = dict(picks=channels)
         else:
             kwargs = dict(picks=['eeg'])
         # epochTimes: tmin, tmax, ...
