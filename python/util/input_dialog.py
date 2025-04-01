@@ -43,6 +43,8 @@ def require_options_with_QDialog(default_options: dict = {}, comment: str = '# C
     # Make dialog
     dialog = QtWidgets.QDialog()
     dialog.setWindowTitle(window_title)
+    # dialog.resize(800, dialog.sizeHint().height())  # Set dialog width to 800px
+    dialog.resize(800, 600)  # Set dialog width to 800px
 
     layout = QtWidgets.QVBoxLayout()
     text_area = QtWidgets.QTextEdit()

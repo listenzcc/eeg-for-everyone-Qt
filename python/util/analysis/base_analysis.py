@@ -342,7 +342,7 @@ class BaseAnalysis(object):
             epochs.pick(channels)
 
         all_data = epochs.get_data()
-        print(all_data.shape)
+        logger.debug(f'Epochs data shape: {all_data.shape}')
 
         # Plot into the dashboard
         dash_app.div.children.append('Epochs detail')

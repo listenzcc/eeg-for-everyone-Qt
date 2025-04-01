@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>973</width>
-    <height>675</height>
+    <height>676</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>0</x>
      <y>10</y>
      <width>971</width>
-     <height>114</height>
+     <height>116</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -122,6 +122,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="zcc_pushButton_generateReport">
+          <property name="text">
+           <string>Generate Report</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -172,6 +179,13 @@
          <widget class="QRadioButton" name="zcc_radioButton_requireDetail">
           <property name="text">
            <string>Require Detail</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="zcc_pushButton_viewInWeb">
+          <property name="text">
+           <string>View in Web</string>
           </property>
          </widget>
         </item>

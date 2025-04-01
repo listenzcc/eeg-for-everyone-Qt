@@ -351,6 +351,8 @@ class SSVEP_Analysis(BaseAnalysis):
         df['measurement'] = df.index
         columns = columns.insert(0, 'measurement')
         df = df[columns]
+
+        print('---- Prediction results ----')
         print(df)
 
         dash_app.div.children.append(dash_table.DataTable(
@@ -451,6 +453,7 @@ class SSVEP_Analysis(BaseAnalysis):
         df['error'] = df['pred_freq'] - df['true_freq']
 
         # Display the prediction results
+        print('---- Prediction results ----')
         print(df)
 
         # Compute and display frequency response

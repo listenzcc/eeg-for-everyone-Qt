@@ -22,6 +22,7 @@ import time
 import random
 import traceback
 import contextlib
+import webbrowser
 import matplotlib.pyplot as plt
 
 from pathlib import Path
@@ -37,6 +38,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import QUiLoader
 
 from .base.base_window import BaseWindow
+from .report.pdf import PDFReportGenerator
 from . import logger, dash_app, project_root, cache_path, asset_path
 
 
@@ -77,6 +79,8 @@ class AnalysisResultsWindow(BaseWindow):
     label_progressing: QtWidgets.QLabel = None
     radioButton_requireDetail: QtWidgets.QRadioButton = None
     pushButton_fetchData: QtWidgets.QPushButton = None
+    pushButton_viewInWeb: QtWidgets.QPushButton = None
+    pushButton_generateReport: QtWidgets.QPushButton = None
     buttonBox_submit = None
     timer = QtCore.QTimer()
 
@@ -125,8 +129,8 @@ class AnalysisResultsWindow(BaseWindow):
             fileName = QtWidgets.QFileDialog.getSaveFileName(
                 caption='File name to save', filter='Matlab Compatible Files (*.mat)')
 
+            # Do nothing when not selecting any file
             if len(fileName[0]) == 0:
-                # Not selecting any file
                 return
 
             path = Path(fileName[0])
@@ -135,6 +139,33 @@ class AnalysisResultsWindow(BaseWindow):
                 selected_file_idx, selected_event_id, path=path)
 
         self.pushButton_fetchData.clicked.connect(_handle)
+
+    def handle_pushButton_viewInWeb(self):
+        def _handle():
+            webbrowser.open('http://localhost:8890')
+            pass
+
+        self.pushButton_viewInWeb.clicked.connect(_handle)
+
+    def handle_pushButton_generateReport(self):
+        def _handle():
+            print('Clicked generateReport button.')
+            self.generate_report()
+            pass
+
+        self.pushButton_generateReport.clicked.connect(_handle)
+
+    def generate_report(self):
+        fileName = QtWidgets.QFileDialog.getSaveFileName(
+            caption='Report file name', filter='PDF Files (*.pdf)')
+
+        # Do nothing when not selecting any file
+        if len(fileName[0]) == 0:
+            return
+
+        path = Path(fileName[0])
+        print(path)
+        pass
 
     def on_load(self, analysis_obj):
         # ----------------------------------------
@@ -150,9 +181,17 @@ class AnalysisResultsWindow(BaseWindow):
         self.comboBox_selectFile.currentIndexChanged.connect(
             lambda e: self.on_select_file())
 
+        # Handle select file operation.
         self.on_select_file()
 
+        # Handle save data operation.
         self.handle_pushButton_fetchData()
+
+        # Handle view in web operation.
+        self.handle_pushButton_viewInWeb()
+
+        # Handle generate report operation.
+        self.handle_pushButton_generateReport()
 
         return analysis_obj
 
@@ -197,12 +236,37 @@ class AnalysisResultsWindow(BaseWindow):
         self.comboBox_selectFile.setFocus()
 
     def handle_accept(self):
-        print('**** Analysis ****')
+        '''
+        Handle the accept event for file selection, event selection and method selection.
+        '''
+
+        # ----------------------------------------
+        # ---- Check current options ----
+        selected_file_idx, selected_event_id = self._get_selected_options()
+        flag_require_detail = self.radioButton_requireDetail.isChecked()
+        method_name = self.comboBox_selectMethod.currentText()
+
+        lst = [
+            f'AnalysisObj: {type(self.analysis_obj)}',
+            f'Method: {method_name}',
+            f'fileIdx: {selected_file_idx}',
+            f'eventId: {selected_event_id}'
+        ]
+        print('\n\n********************************************************************************')
+        [print(f'**** {e} ****') for e in lst]
+        logger.debug(', '.join(lst))
+
+        # ----------------------------------------
+        # ---- Compute with necessary options: idx and event_id ----
+        if not len(selected_event_id):
+            logger.warning(f'Invalid event_id: {selected_event_id}')
+            return
+
         # ----------------------------------------
         # ---- Get output's geometry ----
         width = self.label_output.geometry().width()
         height = self.label_output.geometry().height()
-        logger.debug(f'The output size is {width}x{height}')
+        logger.debug(f'The output geometry size is {width}x{height}')
 
         # ----------------------------------------
         # ---- Place the computing img ----
@@ -210,30 +274,16 @@ class AnalysisResultsWindow(BaseWindow):
             pixmap = img_to_pixmap(asset_imgs.get('computing'), width, height)
             self.label_output.setPixmap(pixmap)
 
-        # ----------------------------------------
-        # ---- Check current options ----
-        selected_file_idx, selected_event_id = self._get_selected_options()
-        flag_require_detail = self.radioButton_requireDetail.isChecked()
-        method_name = self.comboBox_selectMethod.currentText()
-        logger.debug(
-            f'Submit for {method_name}, {selected_file_idx}, {selected_event_id}')
-
-        if not len(selected_event_id):
-            logger.warning(f'Invalid event_id: {selected_event_id}')
-            return
-
-        # ----------------------------------------
-        # ---- Compute with necessary options: idx and event_id ----
-
-        self._toggle_input_components(False)
-
         # Clear the dash_app's children part
         dash_app.div.children = []
 
+        # Protect the input components from repeated calls.
+        self._toggle_input_components(False)
         try:
             # Start progressing bar updating
             Thread(target=self._progress_bar_engage, daemon=True).start()
 
+            # ! Call the method.
             fig = self.analysis_obj.methods[method_name](
                 selected_file_idx,
                 selected_event_id,
@@ -269,8 +319,7 @@ class AnalysisResultsWindow(BaseWindow):
             # ----------------------------------------
             # ---- Popup error box ----
             dialog = QtWidgets.QDialog(parent=self.window)
-            error_title = f'Computing on method: {
-                method_name} got error: {err}'
+            error_title = f'Failed: {method_name}. Error: {err}'
             dialog.setWindowTitle(error_title)
             layout = QtWidgets.QVBoxLayout()
             message = QtWidgets.QLabel(msg)
