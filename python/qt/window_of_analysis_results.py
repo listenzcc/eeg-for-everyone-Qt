@@ -81,6 +81,7 @@ class AnalysisResultsWindow(BaseWindow):
     pushButton_fetchData: QtWidgets.QPushButton = None
     pushButton_viewInWeb: QtWidgets.QPushButton = None
     pushButton_generateReport: QtWidgets.QPushButton = None
+    listWidget_figList: QtWidgets.QListWidget = None
     buttonBox_submit = None
     timer = QtCore.QTimer()
 
@@ -107,9 +108,7 @@ class AnalysisResultsWindow(BaseWindow):
     def _timer(self):
         def _timeout():
             self.label_progressing.repaint()
-
         self.timer.timeout.connect(_timeout)
-
         self.timer.start(100)
 
     def _get_selected_options(self):
@@ -123,6 +122,79 @@ class AnalysisResultsWindow(BaseWindow):
         selected_event_id = self.comboBox_selectEventId.currentText()
         selected_event_id = selected_event_id.split(':')[0].strip()
         return selected_file_idx, selected_event_id
+
+    def handle_listWidget_figList_doubleClick(self):
+        def _handle_single(item):
+            # Handle double click on item.
+            name = item.text()
+            logger.info(f'Double-clicked on item: {name}')
+
+            # Restore the fig into the fig label.
+            fig = self.analysis_obj.report_figs.get(name)
+            img = Image.frombytes(
+                'RGB',
+                fig.canvas.get_width_height(),
+                fig.canvas.tostring_rgb())  # .resize((width, height))
+            width = self.label_output.geometry().width()
+            height = self.label_output.geometry().height()
+            pixmap = img_to_pixmap(img, width, height)
+            self.label_output.setPixmap(pixmap)
+            logger.debug(f'Restore the {name}: {fig}')
+
+        def _handle_double(item):
+            # Handle double click on item.
+            name = item.text()
+            logger.info(f'Double-clicked on item: {name}')
+
+            # Restore the fig into the fig label.
+            fig = self.analysis_obj.report_figs.get(name)
+            img = Image.frombytes(
+                'RGB',
+                fig.canvas.get_width_height(),
+                fig.canvas.tostring_rgb())  # .resize((width, height))
+            width = self.label_output.geometry().width()
+            height = self.label_output.geometry().height()
+            pixmap = img_to_pixmap(img, width, height)
+            self.label_output.setPixmap(pixmap)
+            logger.debug(f'Restore the {name}: {fig}')
+
+            # Add remove button to remove fig from the report_figs
+            # Start the dialog to write some notes.
+            dialog = QtWidgets.QDialog(parent=self.window)
+            dialog.setWindowTitle(f'Add Note for {name}')
+            layout = QtWidgets.QVBoxLayout()
+
+            label = QtWidgets.QLabel(f'Write a note for {name}:')
+            text_edit = QtWidgets.QTextEdit()
+            text_edit.setText(self.analysis_obj.report_figs_note.get(name, ''))
+            save_button = QtWidgets.QPushButton('Save')
+            remove_button = QtWidgets.QPushButton('Remove')
+
+            def save_note():
+                note = text_edit.toPlainText()
+                self.analysis_obj.report_figs_note[name] = note
+                logger.info(f'Saved note for {name}: {note}')
+                dialog.accept()
+
+            def remove_fig():
+                self.analysis_obj.remove_report_fig(name)
+                self.listWidget_figList.takeItem(
+                    self.listWidget_figList.row(item))
+                logger.info(f'Removed figure: {name}')
+                dialog.accept()
+
+            save_button.clicked.connect(save_note)
+            remove_button.clicked.connect(remove_fig)
+
+            layout.addWidget(label)
+            layout.addWidget(text_edit)
+            layout.addWidget(save_button)
+            layout.addWidget(remove_button)
+            dialog.setLayout(layout)
+            dialog.exec()
+
+        self.listWidget_figList.itemDoubleClicked.connect(_handle_double)
+        self.listWidget_figList.itemClicked.connect(_handle_single)
 
     def handle_pushButton_fetchData(self):
         def _handle():
@@ -150,7 +222,12 @@ class AnalysisResultsWindow(BaseWindow):
     def handle_pushButton_generateReport(self):
         def _handle():
             print('Clicked generateReport button.')
-            self.generate_report()
+            try:
+                self.generate_report()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                logger.error(f'Failed generate report: {e}')
             pass
 
         self.pushButton_generateReport.clicked.connect(_handle)
@@ -165,6 +242,63 @@ class AnalysisResultsWindow(BaseWindow):
 
         path = Path(fileName[0])
         print(path)
+        obj = self.analysis_obj
+        report = PDFReportGenerator(
+            title='EEG Project Report',
+            output_path=path.as_posix(),
+        )
+        report.add_title_page(
+            subtitle='EEG Project Report (Place holder)',
+            author='Listenzcc'
+        )
+
+        # File section
+        report.add_paragraph('**** File ****', 'Subtitle')
+        for i, file in enumerate(obj.files):
+            report.add_paragraph(f'File ({i+1})', 'CenteredText')
+            for k, v in file.items():
+                report.add_paragraph(f'    {k}: {v}')
+        report.add_page_break()
+
+        # Preprocess section
+        report.add_paragraph('**** Preprocess ****', 'Subtitle')
+        for k, v in obj.options.items():
+            report.add_paragraph(f'    {k}: {v}')
+        report.add_page_break()
+
+        # Epochs section
+        report.add_paragraph('**** Epochs ****', 'Subtitle')
+        for i, epochs_obj in enumerate(obj.objs):
+            report.add_paragraph(f'Epochs ({i+1})', 'CenteredText')
+            epochs = epochs_obj.epochs
+            report.add_paragraph(f'    EventId: {epochs.event_id}')
+            for k, v in epochs.info.items():
+                if v:
+                    report.add_paragraph(f'    {k}: {v}')
+        report.add_page_break()
+
+        # Figures section
+        report.add_paragraph('**** Figures ****', 'Subtitle')
+        first_fig = True
+        for k, fig in obj.report_figs.items():
+            if not first_fig:
+                report.add_page_break()
+            first_fig = False
+            report.add_paragraph(f'    Figure: {k}: {fig}')
+            report.add_image(fig, caption=f'{k}')
+            note = obj.report_figs_note.get(k, '')
+            report.add_paragraph(note)
+        report.add_page_break()
+
+        # Methods section
+        # report.add_paragraph('**** Methods ****', 'Subtitle')
+        # for k, v in obj.methods.items():
+        #     report.add_paragraph(f'{k}: {v}')
+        # report.add_page_break()
+
+        report.add_stopper('**** Report finishes ****')
+        report.generate()
+        webbrowser.open(path)
         pass
 
     def on_load(self, analysis_obj):
@@ -192,6 +326,9 @@ class AnalysisResultsWindow(BaseWindow):
 
         # Handle generate report operation.
         self.handle_pushButton_generateReport()
+
+        # Handle double click on list widget.
+        self.handle_listWidget_figList_doubleClick()
 
         return analysis_obj
 
@@ -289,6 +426,9 @@ class AnalysisResultsWindow(BaseWindow):
                 selected_event_id,
                 flag_require_detail=flag_require_detail)
             fig.canvas.draw()
+            self.listWidget_figList.clear()
+            self.listWidget_figList.addItems(
+                list(self.analysis_obj.report_figs.keys()))
 
             # ----------------------------------------
             # ---- Fit image to output frame ----

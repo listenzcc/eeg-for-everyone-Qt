@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>973</width>
+    <width>906</width>
     <height>676</height>
    </rect>
   </property>
@@ -18,13 +18,19 @@
     <rect>
      <x>0</x>
      <y>10</y>
-     <width>971</width>
-     <height>116</height>
+     <width>901</width>
+     <height>139</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="sizeConstraint">
+     <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+    </property>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
@@ -68,6 +74,22 @@
         </item>
         <item>
          <widget class="QComboBox" name="zcc_comboBox_selectFile"/>
+        </item>
+        <item>
+         <widget class="QDialogButtonBox" name="zcc_buttonBox_submit">
+          <property name="maximumSize">
+           <size>
+            <width>80</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="standardButtons">
+           <set>QDialogButtonBox::StandardButton::Apply</set>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -222,6 +244,12 @@
         </item>
         <item>
          <widget class="QLabel" name="zcc_label_progressing">
+          <property name="baseSize">
+           <size>
+            <width>600</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -232,13 +260,62 @@
      </layout>
     </item>
     <item>
-     <widget class="QDialogButtonBox" name="zcc_buttonBox_submit">
-      <property name="orientation">
-       <enum>Qt::Orientation::Vertical</enum>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="standardButtons">
-       <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>137</height>
+       </size>
       </property>
+      <property name="maximumSize">
+       <size>
+        <width>600</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="baseSize">
+       <size>
+        <width>600</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="title">
+       <string>AnalysisHistory:</string>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
+      </property>
+      <widget class="QListWidget" name="zcc_listWidget_figList">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>20</y>
+         <width>300</width>
+         <height>111</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>200</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Shape::WinPanel</enum>
+       </property>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -247,9 +324,9 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>120</y>
-     <width>971</width>
-     <height>551</height>
+     <y>150</y>
+     <width>901</width>
+     <height>521</height>
     </rect>
    </property>
    <property name="text">
@@ -257,6 +334,19 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="Line" name="line">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>140</y>
+     <width>901</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
   </widget>
  </widget>

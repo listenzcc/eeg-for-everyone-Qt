@@ -126,6 +126,8 @@ class P300_Analysis(BaseAnalysis):
             ts_args=dict(units={'eeg': 'R2'})
         )
 
+        self.append_report_fig(fig, 'R2Index', selected_idx, selected_event_id)
+
         return fig
 
     def Classifier(self, selected_idx, selected_event_id, **kwargs):
@@ -430,6 +432,9 @@ class P300_Analysis(BaseAnalysis):
         ax.set_ylabel('Predict label')
         ax.set_title(
             f'Method: {method}, Roc auc score is {roc_auc_score:0.2f}')
+
+        self.append_report_fig(
+            fig, f'Classifier({method})', selected_idx, selected_event_id)
         return fig
 
 

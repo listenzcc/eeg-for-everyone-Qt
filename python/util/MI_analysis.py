@@ -114,7 +114,7 @@ class MI_Analysis(BaseAnalysis):
         title = f'TFR-morlet-evoked-{selected_event_id}'
         fig.suptitle(title)
         fig.tight_layout()
-
+        self.append_report_fig(fig, 'ERD', selected_idx, selected_event_id)
         return fig
 
 

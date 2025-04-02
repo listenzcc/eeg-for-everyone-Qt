@@ -202,6 +202,9 @@ class SSVEP_Analysis(BaseAnalysis):
         ax.set_xlabel('Freqs')
         ax.set_ylabel('Phase diff')
         ax.set_title('Phase analysis for SSVEP')
+
+        self.append_report_fig(
+            fig, 'PhaseDiff', selected_idx, selected_event_id)
         return fig
 
     def TRCA(self, selected_idx, selected_event_id, **kwargs):
@@ -368,6 +371,8 @@ class SSVEP_Analysis(BaseAnalysis):
         ax.set_xlabel('True label')
         ax.set_ylabel('Predict label')
         ax.set_title(f'Method: {method}')
+
+        self.append_report_fig(fig, 'TRCA', selected_idx, selected_event_id)
         return fig
 
     def FBCCA(self, selected_idx, selected_event_id, **kwargs):
@@ -494,6 +499,9 @@ class SSVEP_Analysis(BaseAnalysis):
                 se['true_freq'], se['pred_freq'], f'*{selected_event_id} | {se["pred_freq"]} | {se["true_freq"]}', horizontalalignment='left')
 
         ax.grid(True)
+
+        self.append_report_fig(fig, 'FBCCA', selected_idx, selected_event_id)
+
         return fig
 
     def _FBCCA_plot_filter(self, pre_notch_filter, filter_bank, sfreq):

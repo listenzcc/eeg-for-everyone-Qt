@@ -19,49 +19,100 @@ Functions:
 # %% ---- 2025-04-01 ------------------------
 # Requirements and constants
 import os
+import hashlib
 import matplotlib.pyplot as plt
 
 from io import BytesIO
 from datetime import datetime
 from PIL import Image as PILImage
 
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak, BaseDocTemplate, Frame, PageTemplate
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib import colors
 from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, Spacer, Image, PageBreak, BaseDocTemplate, Frame, PageTemplate
 
 # %% ---- 2025-04-01 ------------------------
 # Function and class
 
 
+def mk_sha256(b: bytes):
+    """Convert bytes into sha256 representation string.
+
+    Args:
+        b (bytes): The input bytes.
+
+    Returns:
+        str: The sha256 representation string.
+    """
+    m = hashlib.sha256()
+    m.update(b'listenzcc')
+    m.update(b)
+    return m.hexdigest()
+
+
+def register_chinese_font():
+    """注册中文字体，返回字体名称"""
+    try:
+        # 尝试使用系统字体
+        font_paths = [
+            # Windows
+            "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+            "C:/Windows/Fonts/simsun.ttc",  # 宋体
+            "C:/Windows/Fonts/simhei.ttf",  # 黑体
+            # MacOS
+            "/System/Library/Fonts/STSong.ttf",
+            "/System/Library/Fonts/STHeiti Medium.ttc",
+            # Linux
+            "/usr/share/fonts/wenquanyi/wqy-zenhei.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
+        ]
+
+        for path in font_paths:
+            if os.path.exists(path):
+                font_name = os.path.splitext(os.path.basename(path))[0]
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, path))
+                    return font_name
+                except:
+                    continue
+
+        # 尝试使用reportlab亚洲字体
+        from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+        pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+        return 'STSong-Light'
+    except:
+        raise Exception("无法注册中文字体，请确保系统安装了中文字体")
+
+
 class PDFReportGenerator:
-    def __init__(self, title, output_path="report.pdf", page_size=A4):
+    chinese_font = register_chinese_font()
+    page_size = A4
+
+    def __init__(self, title, output_path="report.pdf"):
         """
         初始化PDF报告生成器
 
         参数:
             title: 报告标题
             output_path: 输出PDF路径 (默认: "report.pdf")
-            page_size: 页面尺寸 (默认: A4)
         """
         self.title = title
         self.output_path = output_path
-        self.page_size = page_size
         self.elements = []
-        self.chinese_font = self._register_chinese_font()
         self.styles = self._setup_styles()
         self.count_pages = 0
-        self.serial = 'woaibeijingtiananmenTianmenshangtaiyangsheng'
+        self.date = datetime.now().isoformat()
+        self.serial = mk_sha256(self.date.encode('utf-8')).upper()
 
         # 创建文档模板
         self.doc = BaseDocTemplate(
             output_path,
-            pagesize=page_size,
+            pagesize=self.page_size,
             rightMargin=72,
             leftMargin=72,
             topMargin=72,
@@ -84,42 +135,10 @@ class PDFReportGenerator:
         self.doc.addPageTemplates([
             PageTemplate(id='FirstPage', frames=[
                          content_frame, footer_frame], onPage=self._render_page),
+            # Not working, but I don't know why.
             PageTemplate(id='LaterPages', frames=[
                          content_frame, footer_frame], onPage=self._later_pages)
         ])
-
-    def _register_chinese_font(self):
-        """注册中文字体，返回字体名称"""
-        try:
-            # 尝试使用系统字体
-            font_paths = [
-                # Windows
-                "C:/Windows/Fonts/msyh.ttc",  # 宋体
-                "C:/Windows/Fonts/simsun.ttc",  # 宋体
-                "C:/Windows/Fonts/simhei.ttf",  # 黑体
-                # MacOS
-                "/System/Library/Fonts/STSong.ttf",
-                "/System/Library/Fonts/STHeiti Medium.ttc",
-                # Linux
-                "/usr/share/fonts/wenquanyi/wqy-zenhei.ttc",
-                "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
-            ]
-
-            for path in font_paths:
-                if os.path.exists(path):
-                    font_name = os.path.splitext(os.path.basename(path))[0]
-                    try:
-                        pdfmetrics.registerFont(TTFont(font_name, path))
-                        return font_name
-                    except:
-                        continue
-
-            # 尝试使用reportlab亚洲字体
-            from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-            pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
-            return 'STSong-Light'
-        except:
-            raise Exception("无法注册中文字体，请确保系统安装了中文字体")
 
     def _setup_styles(self):
         """设置样式表"""
@@ -176,11 +195,12 @@ class PDFReportGenerator:
             },
             'Stopper': {
                 'parent': styles['Normal'],
-                'fontSize': 8,
+                'fontSize': 14,
                 'leading': 10,
                 'alignment': TA_CENTER,
                 'spaceBefore': 10,
-                'fontName': self.chinese_font
+                'fontName': self.chinese_font,
+                'textColor': colors.darkred,
             }
         }
 
@@ -193,6 +213,7 @@ class PDFReportGenerator:
     def add_title_page(self, subtitle=None, author=None):
         """添加标题页"""
         # 添加主标题
+        self.elements.append(Spacer(1, 1*inch))
         self.elements.append(Paragraph(self.title, self.styles['Title']))
 
         # 添加副标题（如果有）
@@ -201,17 +222,15 @@ class PDFReportGenerator:
 
         # 添加作者和日期（如果有）
         self.elements.append(Spacer(1, 2*inch))
-        if author:
-            self.elements.append(
-                Paragraph(f"作者: {author}", self.styles['CenteredText']))
-
+        blank = '_' * len(self.date)
         self.elements.append(
-            Paragraph(f'序列号：{self.serial}', self.styles['CenteredText']))
-
-        date = datetime.now().strftime("%Y年%m月%d日")
-        date = datetime.now().isoformat()
+            Paragraph(f"分析员: {blank}", self.styles['CenteredText']))
         self.elements.append(
-            Paragraph(f'日期：{date}', self.styles['CenteredText']))
+            Paragraph(f"校对员: {blank}", self.styles['CenteredText']))
+        self.elements.append(
+            Paragraph(f"制表员: {blank}", self.styles['CenteredText']))
+        self.elements.append(
+            Paragraph(f'日期：{self.date}', self.styles['CenteredText']))
 
         # 添加分页符
         self.elements.append(PageBreak())
@@ -294,21 +313,29 @@ class PDFReportGenerator:
     def _render_page(self, canvas: canvas.Canvas, doc):
         """Customizes the first page (adds footer at the bottom)."""
         canvas.saveState()
-        # Footer text
-        footer_text = f'序列号：{self.serial.upper()}'  # "Python自动报告生成 - 仅供学习使用"
+        # Header text
+        header_text = f'序列号：{self.serial.upper()}'  # "Python自动报告生成 - 仅供学习使用"
         canvas.setFont(self.chinese_font, 8)
         canvas.setFillColor('gray')
-        canvas.drawCentredString(
-            self.page_size[0] / 2.0,
-            0.5 * inch,  # Ensure footer is at the bottom
-            footer_text
+        canvas.drawString(
+            self.doc.leftMargin,
+            self.page_size[1] - 0.5 * inch,  # Ensure header is at the top.
+            header_text
+        )
+        # Draw line below the header
+        canvas.setStrokeColor('gray')
+        canvas.line(
+            self.doc.leftMargin,
+            self.page_size[1] - 0.55 * inch,
+            self.page_size[0] - self.doc.rightMargin,
+            self.page_size[1] - 0.55 * inch
         )
         # Page number
         current_page = doc.page
         page_number = f"第 {current_page} 页"
         canvas.drawCentredString(
             self.page_size[0] / 2.0,
-            0.35 * inch,  # Page number below footer text
+            0.35 * inch,  # Page number is at the bottom.
             page_number
         )
         canvas.restoreState()
