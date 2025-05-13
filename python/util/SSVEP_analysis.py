@@ -37,6 +37,7 @@ from sklearn import model_selection
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from .analysis.base_analysis import BaseAnalysis
+from .analysis.compute_mutual_information import mutual_information_from_confusion_matrix
 from .input_dialog import require_options_with_QDialog
 from .default.n_jobs import n_jobs
 from . import logger, dash_app
@@ -345,6 +346,17 @@ class SSVEP_Analysis(BaseAnalysis):
             y_true=test_y, y_pred=y_pred, normalize='true')
         logger.debug(f'Prediction result: {report}, {c_mat}')
 
+        # Compute Mutual Information
+        confusion_matrix = metrics.confusion_matrix(
+            y_true=test_y, y_pred=y_pred)
+        m_i = mutual_information_from_confusion_matrix(confusion_matrix)
+        t = np.max(epochs.times)
+        itr = m_i / t
+        if 'i_need_ITR' in kwargs:
+            setattr(kwargs['i_need_ITR'], 'ITR', itr)
+        logger.debug(
+            f'The mutual information is {m_i} bits, time is {t} seconds, itr is {itr} bits/seconds')
+
         # ----------------------------------------
         # ---- Generate result figure ----
 
@@ -460,6 +472,19 @@ class SSVEP_Analysis(BaseAnalysis):
         # Display the prediction results
         print('---- Prediction results ----')
         print(df)
+
+        # Compute Mutual Information
+        y_pred = df['pred_event']
+        test_y = df['true_event']
+        confusion_matrix = metrics.confusion_matrix(
+            y_true=test_y, y_pred=y_pred)
+        m_i = mutual_information_from_confusion_matrix(confusion_matrix)
+        t = np.max(epochs.times)
+        itr = m_i / t
+        if 'i_need_ITR' in kwargs:
+            setattr(kwargs['i_need_ITR'], 'ITR', itr)
+        logger.debug(
+            f'The mutual information is {m_i} bits, time is {t} seconds, itr is {itr} bits/seconds')
 
         # Compute and display frequency response
         if kwargs.get('flag_require_detail', True):

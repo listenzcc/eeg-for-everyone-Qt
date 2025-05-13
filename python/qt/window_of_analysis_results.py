@@ -275,6 +275,12 @@ class AnalysisResultsWindow(BaseWindow):
             for k, v in epochs.info.items():
                 if v:
                     report.add_paragraph(f'    {k}: {v}')
+
+            if hasattr(self, 'ITR'):
+                report.add_paragraph(f'ITR: {self.ITR} 比特每秒')
+            else:
+                report.add_paragraph('ITR: N.A. （请至少运行一项机器学习任务）')
+
         report.add_page_break()
 
         # Figures section
@@ -421,10 +427,12 @@ class AnalysisResultsWindow(BaseWindow):
             Thread(target=self._progress_bar_engage, daemon=True).start()
 
             # ! Call the method.
+            # ! The methods are the callable in analysis.base_analysis or other *_analysis modules.
             fig = self.analysis_obj.methods[method_name](
                 selected_file_idx,
                 selected_event_id,
-                flag_require_detail=flag_require_detail)
+                flag_require_detail=flag_require_detail,
+                i_need_ITR=self)
             fig.canvas.draw()
             self.listWidget_figList.clear()
             self.listWidget_figList.addItems(

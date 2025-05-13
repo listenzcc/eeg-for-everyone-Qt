@@ -22,6 +22,7 @@ Functions:
 
 # %% ---- 2024-04-25 ------------------------
 # Requirements and constants
+from typing import Optional
 from PySide6 import QtCore, QtWidgets
 
 from .. import logger
@@ -52,13 +53,13 @@ class BaseWindow(object):
     children = None
     known_component_prefix = known_component_prefix
 
-    def __init__(self, window: QtWidgets):
+    def __init__(self, window: QtWidgets.QDialog):
         self.window = window
         self._search_children()
         self._assign_children()
         self._set_window_title()
 
-    def _set_window_title(self, title: str = None):
+    def _set_window_title(self, title: Optional[str] = None):
         if title is None:
             title = '脑机接口专项'
         self.window.setWindowTitle(title)
