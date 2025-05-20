@@ -20,12 +20,12 @@ Functions:
 # Requirements and constants
 import time
 import random
-import numpy as np
 import traceback
 import contextlib
 import webbrowser
 import matplotlib.pyplot as plt
 
+from io import BytesIO
 from pathlib import Path
 from threading import Thread
 from datetime import datetime
@@ -441,23 +441,14 @@ class AnalysisResultsWindow(BaseWindow):
 
             # ----------------------------------------
             # ---- Fit image to output frame ----
-            # img = Image.frombytes(
-            #     'RGB',
-            #     fig.canvas.get_width_height(),
-            #     fig.canvas.tostring_argb())  # .resize((width, height))
-            # 获取 RGBA 缓冲区数据
-            buf = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
-            buf = buf.reshape(fig.canvas.get_width_height()[
-                              ::-1] + (4,))  # (height, width, 4) RGBA
-
-            # 转换为 RGB（去掉 Alpha 通道）
-            rgb = buf[:, :, :3]
-
-            # 创建 PIL 图像
-            img = Image.fromarray(rgb)
-
-            # Clear existing plt buffer
+            # 保存到内存缓冲区
+            buf = BytesIO()
+            fig.savefig(buf, format='png', dpi=fig.dpi)
             plt.close(fig)
+            buf.seek(0)
+
+            # 用 PIL 读取
+            img = Image.open(buf)
 
             pixmap = img_to_pixmap(img, width, height)
             self.label_output.setPixmap(pixmap)

@@ -1,3 +1,3 @@
 
 # Activate the python venv
-conda activate bci-software
+conda activate eeg-for-everyone
