@@ -103,6 +103,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
         self.handle_goToNext_events()
 
+        self.progressBar.setValue(0)
         logger.info(f'Initialized with protocol {protocol}')
 
     def bind_options_with_textEdits(self):
@@ -149,7 +150,9 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     '\n\n'.join(traceback_message))
                 self.textBrowser_tracebackMessage.repaint()
 
-            Thread(target=self._progress_bar_engage, daemon=True).start()
+            thread = Thread(target=self._progress_bar_engage,
+                            daemon=True)
+            thread.start()
             self.buttonBox_goToNext.setEnabled(False)
 
             try:
@@ -196,6 +199,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
 
             finally:
                 self._progress_bar_going_flag = False
+                thread.join()
                 self.buttonBox_goToNext.setEnabled(True)
                 logger.debug(
                     f'Accepted options: {protocol} | {options} | {files}')
@@ -214,6 +218,7 @@ class SetupOptionsWindow(BaseProtocolWindow):
             time.sleep(random.random())
 
         self.progressBar.setValue(100)
+        logger.debug('Progress bar finished')
 
 # %% ---- 2024-04-29 ------------------------
 # Play ground
