@@ -132,10 +132,13 @@ class AnalysisResultsWindow(BaseWindow):
 
             # Restore the fig into the fig label.
             fig = self.analysis_obj.report_figs.get(name)
-            img = Image.frombytes(
-                'RGB',
-                fig.canvas.get_width_height(),
-                fig.canvas.tostring_rgb())  # .resize((width, height))
+            # 保存到内存缓冲区，并用 PIL 读取
+            buf = BytesIO()
+            fig.savefig(buf, format='png', dpi=fig.dpi)
+            plt.close(fig)
+            buf.seek(0)
+            img = Image.open(buf)
+
             width = self.label_output.geometry().width()
             height = self.label_output.geometry().height()
             pixmap = img_to_pixmap(img, width, height)
@@ -149,10 +152,12 @@ class AnalysisResultsWindow(BaseWindow):
 
             # Restore the fig into the fig label.
             fig = self.analysis_obj.report_figs.get(name)
-            img = Image.frombytes(
-                'RGB',
-                fig.canvas.get_width_height(),
-                fig.canvas.tostring_rgb())  # .resize((width, height))
+            # 保存到内存缓冲区，并用 PIL 读取
+            buf = BytesIO()
+            fig.savefig(buf, format='png', dpi=fig.dpi)
+            plt.close(fig)
+            buf.seek(0)
+            img = Image.open(buf)
             width = self.label_output.geometry().width()
             height = self.label_output.geometry().height()
             pixmap = img_to_pixmap(img, width, height)
@@ -441,13 +446,11 @@ class AnalysisResultsWindow(BaseWindow):
 
             # ----------------------------------------
             # ---- Fit image to output frame ----
-            # 保存到内存缓冲区
+            # 保存到内存缓冲区，并用 PIL 读取
             buf = BytesIO()
             fig.savefig(buf, format='png', dpi=fig.dpi)
             plt.close(fig)
             buf.seek(0)
-
-            # 用 PIL 读取
             img = Image.open(buf)
 
             pixmap = img_to_pixmap(img, width, height)

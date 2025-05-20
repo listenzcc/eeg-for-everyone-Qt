@@ -18,6 +18,7 @@ Functions:
 
 # %% ---- 2024-04-29 ------------------------
 # Requirements and constants
+from PySide6.QtCore import QThread, Signal, Slot
 import time
 import random
 from threading import Thread
@@ -57,6 +58,23 @@ analysis_candidates = {
     'SSVEP': SSVEP_Analysis,
     'default': BaseAnalysis,
 }
+
+
+class ProgressBarThread(QThread):
+    progress_updated = Signal(int)
+    running = False
+
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        self.running = True
+        logger.debug('Progress bar thread started')
+        while self.running:
+            progress = random.randint(0, 100)
+            self.progress_updated.emit(progress)
+            self.msleep(100)  # Sleep for 100 milliseconds
+        logger.debug('Progress bar thread finished')
 
 
 class SetupOptionsWindow(BaseProtocolWindow):
@@ -150,8 +168,11 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     '\n\n'.join(traceback_message))
                 self.textBrowser_tracebackMessage.repaint()
 
-            thread = Thread(target=self._progress_bar_engage,
-                            daemon=True)
+            # thread = Thread(target=self._progress_bar_engage,
+            #                 daemon=True)
+            # thread.start()
+            thread = ProgressBarThread()
+            thread.progress_updated.connect(self._update_progress_bar)
             thread.start()
             self.buttonBox_goToNext.setEnabled(False)
 
@@ -198,8 +219,11 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     'background-color: #fedfe1')
 
             finally:
-                self._progress_bar_going_flag = False
-                thread.join()
+                # self._progress_bar_going_flag = False
+                # thread.join()
+                thread.running = False
+                thread.quit()
+                thread.wait()
                 self.buttonBox_goToNext.setEnabled(True)
                 logger.debug(
                     f'Accepted options: {protocol} | {options} | {files}')
@@ -207,18 +231,11 @@ class SetupOptionsWindow(BaseProtocolWindow):
         self.buttonBox_goToNext.accepted.disconnect()
         self.buttonBox_goToNext.accepted.connect(_accept)
 
-    def _progress_bar_engage(self):
-        self._progress_bar_going_flag = True
-
-        t = 0
-        while self._progress_bar_going_flag:
-            t += random.randint(1, 5)
-            t %= 100
-            self.progressBar.setValue(t)
-            time.sleep(random.random())
-
-        self.progressBar.setValue(100)
-        logger.debug('Progress bar finished')
+    @Slot(int)
+    def _update_progress_bar(self, value):
+        print(value)
+        self.progressBar.setValue(value % 100)
+        self.progressBar.repaint()
 
 # %% ---- 2024-04-29 ------------------------
 # Play ground
