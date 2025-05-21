@@ -18,7 +18,7 @@ Functions:
 
 # %% ---- 2024-04-29 ------------------------
 # Requirements and constants
-from PySide6.QtCore import QThread, Signal, Slot
+from PySide6.QtCore import QThread, QTimer, Signal, Slot
 import time
 import random
 from threading import Thread
@@ -33,6 +33,7 @@ from .window_of_analysis_results import AnalysisResultsWindow
 from . import default_options
 from . import MI_Analysis, P300_Analysis, SSVEP_Analysis, BaseAnalysis
 from . import logger, project_root, cache_path
+from .signal import GS
 
 # --------------------
 loader = QUiLoader()
@@ -147,6 +148,10 @@ class SetupOptionsWindow(BaseProtocolWindow):
             f'Set option plainTextEdits: {self.option_plainTextEdits}')
 
     def handle_goToNext_events(self):
+        # thread = ProgressBarThread()
+        # thread.progress_updated.connect(self._update_progress_bar)
+        GS.progress_bar_value.connect(self._update_progress_bar)
+
         def _accept():
             files = self.chosen_files
             protocol = self.protocol
@@ -168,19 +173,15 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     '\n\n'.join(traceback_message))
                 self.textBrowser_tracebackMessage.repaint()
 
-            # thread = Thread(target=self._progress_bar_engage,
-            #                 daemon=True)
             # thread.start()
-            thread = ProgressBarThread()
-            thread.progress_updated.connect(self._update_progress_bar)
-            thread.start()
             self.buttonBox_goToNext.setEnabled(False)
 
+            tic = time.time()
             try:
                 # ----------------------------------------
                 # ---- Start analysis ----
                 report_traceback()
-                tic = time.time()
+                GS.progress_bar_value.emit(50)
 
                 _analysis_cls: BaseAnalysis = analysis_candidates.get(
                     protocol, analysis_candidates['default'])
@@ -219,11 +220,10 @@ class SetupOptionsWindow(BaseProtocolWindow):
                     'background-color: #fedfe1')
 
             finally:
-                # self._progress_bar_going_flag = False
+                # thread.running = False
                 # thread.join()
-                thread.running = False
-                thread.quit()
-                thread.wait()
+                # thread.quit()
+                # thread.wait()
                 self.buttonBox_goToNext.setEnabled(True)
                 logger.debug(
                     f'Accepted options: {protocol} | {options} | {files}')
@@ -235,7 +235,6 @@ class SetupOptionsWindow(BaseProtocolWindow):
     def _update_progress_bar(self, value):
         print(value)
         self.progressBar.setValue(value % 100)
-        self.progressBar.repaint()
 
 # %% ---- 2024-04-29 ------------------------
 # Play ground

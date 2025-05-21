@@ -41,6 +41,7 @@ from PySide6.QtUiTools import QUiLoader
 from .base.base_window import BaseWindow
 from .report.pdf import PDFReportGenerator
 from . import logger, dash_app, project_root, cache_path, asset_path
+from .signal import GS
 
 
 # ----------------------------------------
@@ -95,14 +96,17 @@ class AnalysisResultsWindow(BaseWindow):
         super(AnalysisResultsWindow, self).__init__(window)
         self._set_window_title(f'Results of {analysis_obj.protocol}')
 
+        GS.progress_bar_value.emit(10)
         self.on_load(analysis_obj)
 
+        GS.progress_bar_value.emit(50)
         self.load_methods()
 
         self.buttonBox_submit.accepted.connect(self.handle_accept)
 
+        GS.progress_bar_value.emit(90)
         self.handle_accept()
-        # self._timer()
+        GS.progress_bar_value.emit(100)
 
         logger.info(f'Initialized with obj: {analysis_obj}')
 
