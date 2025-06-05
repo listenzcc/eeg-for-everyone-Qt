@@ -43,6 +43,8 @@ from .report.pdf import PDFReportGenerator
 from . import logger, dash_app, project_root, cache_path, asset_path
 from .signal import GS
 
+from omegaconf import OmegaConf
+CONF = OmegaConf.load('config.yaml')
 
 # ----------------------------------------
 # ---- Constants ----
@@ -224,7 +226,8 @@ class AnalysisResultsWindow(BaseWindow):
 
     def handle_pushButton_viewInWeb(self):
         def _handle():
-            webbrowser.open('http://localhost:8890')
+            # webbrowser.open('http://localhost:8890')
+            webbrowser.open(f'http://{CONF.Dash.host}:{CONF.Dash.port}')
             pass
 
         self.pushButton_viewInWeb.clicked.connect(_handle)
@@ -287,7 +290,7 @@ class AnalysisResultsWindow(BaseWindow):
                     report.add_paragraph(f'    {k}: {v}')
 
             if hasattr(self, 'ITR'):
-                report.add_paragraph(f'ITR: {self.ITR} 比特每秒')
+                report.add_paragraph(f'ITR: {self.ITR:0.4f} 比特每秒')
             else:
                 report.add_paragraph('ITR: N.A. （请至少运行一项机器学习任务）')
 

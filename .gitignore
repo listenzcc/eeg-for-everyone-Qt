@@ -1,5 +1,7 @@
+*.zip
 offline-process/doc
 
 log
 __pycache__
 cache
+cache-1

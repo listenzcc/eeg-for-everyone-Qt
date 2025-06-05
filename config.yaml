@@ -1,0 +1,7 @@
+DataFolders:
+  Dir1: D://脑机接口专项-样例库-202502
+  Dir2: (其他目录的占位符)
+
+Dash:
+  host: "localhost"
+  port: 8693

@@ -1,5 +1,5 @@
 # Activate venv
-./activate-python-venv.ps1
+conda activate eeg-for-everyone
 
 # Start the application
 python "python/app.py"

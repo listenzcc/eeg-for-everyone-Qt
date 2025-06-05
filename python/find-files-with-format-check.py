@@ -28,18 +28,20 @@ from tqdm.auto import tqdm
 
 from util import logger, cache_path
 from util.find_files import find_files, format_check
+from omegaconf import OmegaConf
 
 
 # %% ---- 2024-04-23 ------------------------
 # Function and class
-
+CONF = OmegaConf.load('config.yaml')
 
 # %% ---- 2024-04-23 ------------------------
 # Play ground
 if __name__ == '__main__':
-    folders = [
-        Path('D://脑机接口专项-样例库-202502')
-    ]
+    folders = [Path(v) for k, v in dict(CONF.DataFolders).items()]
+    # folders = [
+    #     Path('D://脑机接口专项-样例库-202502')
+    # ]
 
     tic = time.time()
 

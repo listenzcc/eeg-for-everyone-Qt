@@ -32,6 +32,7 @@ project_root = Path(__file__).parent.parent.parent
 
 logger_path = project_root.joinpath(f'log/{project_name}.log')
 cache_path = project_root.joinpath('cache')
+cache_path.mkdir(parents=True, exist_ok=True)
 asset_path = project_root.joinpath('asset')
 
 

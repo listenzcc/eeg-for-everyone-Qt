@@ -24,6 +24,10 @@ from datetime import datetime
 from dash import Dash, html
 from threading import Thread
 
+from omegaconf import OmegaConf
+
+CONF = OmegaConf.load('config.yaml')
+
 
 # %% ---- 2024-06-26 ------------------------
 # Function and class
@@ -39,8 +43,8 @@ def singleton(class_):
 
 @singleton
 class DashApp(object):
-    host = 'localhost'
-    port = 8890
+    host = CONF.Dash.host  # 'localhost'
+    port = CONF.Dash.port  # 8693
 
     dynamic_html = ''
 
