@@ -243,7 +243,7 @@ class BaseAnalysis(object):
 
     def _method_plot_psd(self, selected_idx, selected_event_id, **kwargs):
         # Select epochs
-        epochs = self.objs[selected_idx].epochs
+        epochs: mne.Epochs = self.objs[selected_idx].epochs
         # Select eventId
         evoked = epochs[selected_event_id].average()
 
@@ -261,8 +261,13 @@ class BaseAnalysis(object):
             a.set_axis_off()
 
         fig.suptitle(f'PSD {selected_event_id}')
-        mne.viz.plot_epochs_psd_topomap(
-            epochs, bands=bands, show=False, n_jobs=n_jobs, axes=axes)
+
+        # Fix the plot_epochs_psd_topomap method doesn't handle multitaper PSD method error.
+        epochs.plot_psd_topomap(
+            bands=bands, show=False, n_jobs=n_jobs, axes=axes)
+        # mne.viz.plot_epochs_psd_topomap(
+        #     epochs, bands=bands, show=False, n_jobs=n_jobs, axes=axes)
+
         fig.tight_layout()
         self.append_report_fig(fig, 'PSD', selected_idx, selected_event_id)
         return fig
