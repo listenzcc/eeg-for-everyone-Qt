@@ -140,6 +140,7 @@ class P300_Analysis(BaseAnalysis):
         # Pick given channels
         epochs = self.objs[selected_idx].epochs
         epochs = epochs.pick([e.upper() for e in self.options['channels']])
+        print(epochs.get_data().shape)
 
         # Collect other epochs
         other_epochs = [
