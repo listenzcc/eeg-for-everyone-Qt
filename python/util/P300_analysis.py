@@ -404,8 +404,11 @@ class P300_Analysis(BaseAnalysis):
         c_mat = metrics.confusion_matrix(
             y_true=test_y, y_pred=y_pred, normalize='true')
 
-        roc_auc_score = metrics.roc_auc_score(y_true=test_y, y_score=y_prob)
-        logger.debug(f'Prediction result: {report}, {c_mat}, {roc_auc_score}')
+        # roc_auc_score = metrics.roc_auc_score(
+        #     y_true=test_y, y_score=y_prob, multi_class='ovr')
+        acc_score = metrics.accuracy_score(
+            y_true=test_y, y_pred=y_pred, normalize=True)
+        logger.debug(f'Prediction result: {report}, {c_mat}, {acc_score}')
 
         # Compute Mutual Information
         confusion_matrix = metrics.confusion_matrix(
@@ -445,7 +448,7 @@ class P300_Analysis(BaseAnalysis):
         ax.set_xlabel('True label')
         ax.set_ylabel('Predict label')
         ax.set_title(
-            f'Method: {method}, Roc auc score is {roc_auc_score:0.2f}')
+            f'Method: {method}, Acc score is {acc_score:0.2f}')
 
         self.append_report_fig(
             fig, f'Classifier({method})', selected_idx, selected_event_id)

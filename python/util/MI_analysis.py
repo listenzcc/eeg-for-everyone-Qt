@@ -33,6 +33,7 @@ import plotly.express as px
 
 from . import logger, dash_app
 from .analysis.base_analysis import BaseAnalysis
+from .algorithm.MIShallowCNN.shallow import shallow_cnn_decoding
 from .default.n_jobs import n_jobs
 
 # %% ---- 2024-06-12 ------------------------
@@ -171,6 +172,18 @@ class MI_Analysis(BaseAnalysis):
     def load_methods(self):
         self.methods['Plot ERD'] = self.method_plot_erd
         self.methods['FBCSP'] = self.method_fbscp_decoding
+        self.methods['ShallowCNN'] = self.method_shallow_cnn_decoding
+
+    def method_shallow_cnn_decoding(self, selected_idx, selected_event_id, **kwargs):
+        epochs = self.objs[selected_idx].epochs
+        mean_accuracy, all_accuracies, fig = shallow_cnn_decoding(
+            epochs, epochs.events)
+
+        title = 'ShallowCNN Decoding'
+        fig.suptitle(title)
+        fig.tight_layout()
+        self.append_report_fig(fig, 'ShallowCNN', selected_idx)
+        return fig
 
     def method_fbscp_decoding(self, selected_idx, selected_event_id, **kwargs):
         epochs = self.objs[selected_idx].epochs
