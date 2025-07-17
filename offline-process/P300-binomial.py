@@ -1,5 +1,5 @@
 """
-File: P300-二项式.py
+File: P300-binomial.py
 Author: Chuncheng Zhang
 Date: 2024-06-18
 Copyright & Email: chuncheng.zhang@ia.ac.cn

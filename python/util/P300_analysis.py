@@ -46,6 +46,7 @@ from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 from .algorithm.EEGNet.EEGNet import EEGNet
 from .algorithm.R_Sqrt import r2_sqrt
 from .algorithm.Lasso_Preprocess import Lasso_Process
+from .algorithm.Preprocess_ERP.main import EEGProcessor
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
@@ -382,12 +383,24 @@ class P300_Analysis(BaseAnalysis):
             net = EEGNet(MODEL_PATH=require_file_path_with_QDialog(
                 directory=directory))
 
-            # Fit the network
-            # TODO: Actually train the model. Now the method is bypassed since the pre-trained model is used.
+            # ! Add by ZhenChen
+            print(directory)
+            parameter = {'PATH': directory,
+                         'SELECT_CHANNEL': ['Fpz', 'Fp1', 'Fp2', 'AF3', 'AF4', 'AF7', 'AF8', 'Fz', 'F3',
+                                            'F4', 'F7', 'F8', 'FCz', 'FC3', 'FC4', 'FT7', 'FT8', 'Cz',
+                                            'C3', 'C4', 'T7', 'T8', 'CP3', 'CP4', 'TP7', 'TP8', 'Pz',
+                                            'P3', 'P4', 'P7', 'P8', 'POz', 'PO3', 'PO4', 'PO7', 'PO8',
+                                            'Oz', 'O1', 'O2']}
+
+            pro = EEGProcessor(**parameter)
+            data, events, channels_name, correct = pro.run()
+
+            # Now the method is bypassed since the pre-trained model is used.
             net.trained = True
 
             # Get X, y
-            test_X, test_y = _blda_get_X_y(epochs)
+            # test_X, test_y = _blda_get_X_y(epochs)
+            test_X, test_y = data, events[:, 1]
 
             # Predict
             y_prob = net.predict_proba(test_X)
