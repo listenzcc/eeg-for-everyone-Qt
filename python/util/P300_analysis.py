@@ -46,6 +46,7 @@ from .algorithm.BLDA.BLDA import BLDA, post_process_y_prob
 from .algorithm.EEGNet.EEGNet import EEGNet
 from .algorithm.R_Sqrt import r2_sqrt
 from .algorithm.Lasso_Preprocess import Lasso_Process
+from .algorithm.Preprocess_ERP.main import EEGProcessor
 
 # %% ---- 2024-06-17 ------------------------
 # Function and class
@@ -140,6 +141,7 @@ class P300_Analysis(BaseAnalysis):
         # Pick given channels
         epochs = self.objs[selected_idx].epochs
         epochs = epochs.pick([e.upper() for e in self.options['channels']])
+        print(epochs.get_data().shape)
 
         # Collect other epochs
         other_epochs = [
@@ -381,12 +383,24 @@ class P300_Analysis(BaseAnalysis):
             net = EEGNet(MODEL_PATH=require_file_path_with_QDialog(
                 directory=directory))
 
-            # Fit the network
-            # TODO: Actually train the model. Now the method is bypassed since the pre-trained model is used.
+            # ! Add by ZhenChen
+            print(directory)
+            parameter = {'PATH': directory,
+                         'SELECT_CHANNEL': ['Fpz', 'Fp1', 'Fp2', 'AF3', 'AF4', 'AF7', 'AF8', 'Fz', 'F3',
+                                            'F4', 'F7', 'F8', 'FCz', 'FC3', 'FC4', 'FT7', 'FT8', 'Cz',
+                                            'C3', 'C4', 'T7', 'T8', 'CP3', 'CP4', 'TP7', 'TP8', 'Pz',
+                                            'P3', 'P4', 'P7', 'P8', 'POz', 'PO3', 'PO4', 'PO7', 'PO8',
+                                            'Oz', 'O1', 'O2']}
+
+            pro = EEGProcessor(**parameter)
+            data, events, channels_name, correct = pro.run()
+
+            # Now the method is bypassed since the pre-trained model is used.
             net.trained = True
 
             # Get X, y
-            test_X, test_y = _blda_get_X_y(epochs)
+            # test_X, test_y = _blda_get_X_y(epochs)
+            test_X, test_y = data, events[:, 1]
 
             # Predict
             y_prob = net.predict_proba(test_X)
@@ -404,8 +418,11 @@ class P300_Analysis(BaseAnalysis):
         c_mat = metrics.confusion_matrix(
             y_true=test_y, y_pred=y_pred, normalize='true')
 
-        roc_auc_score = metrics.roc_auc_score(y_true=test_y, y_score=y_prob)
-        logger.debug(f'Prediction result: {report}, {c_mat}, {roc_auc_score}')
+        # roc_auc_score = metrics.roc_auc_score(
+        #     y_true=test_y, y_score=y_prob, multi_class='ovr')
+        acc_score = metrics.accuracy_score(
+            y_true=test_y, y_pred=y_pred, normalize=True)
+        logger.debug(f'Prediction result: {report}, {c_mat}, {acc_score}')
 
         # Compute Mutual Information
         confusion_matrix = metrics.confusion_matrix(
@@ -445,7 +462,7 @@ class P300_Analysis(BaseAnalysis):
         ax.set_xlabel('True label')
         ax.set_ylabel('Predict label')
         ax.set_title(
-            f'Method: {method}, Roc auc score is {roc_auc_score:0.2f}')
+            f'Method: {method}, Acc score is {acc_score:0.2f}')
 
         self.append_report_fig(
             fig, f'Classifier({method})', selected_idx, selected_event_id)
